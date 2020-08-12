@@ -10,7 +10,7 @@ import (
 
 // SomeInterface is sample.
 type SomeInterface interface {
-	Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int) (map[string]string, error)
+	Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
 	Baa(d dummy.Dummy, d2 dummy2.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request)
 	Baz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
 	Qux(
@@ -39,7 +39,7 @@ type SomeImpl struct {
 }
 
 // Foo is Foo
-func (*SomeImpl) Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int) (map[string]string, error) {
+func (*SomeImpl) Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error) {
 	return nil, nil
 }
 

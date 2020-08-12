@@ -170,14 +170,21 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 		)
 
 		// method body
+		/*
+			return FakeXxx(x, x, x)
+		*/
 		var bodyCallFmt string
 		if len(intfMethod.Type.Results) != 0 {
 			bodyCallFmt += "return "
 		}
 		bodyCallFmt += methodRcvName + "." + fakeFuncName + intfMethod.Type.PrintCallArgsFmt()
+
 		bodyCallArgs := []interface{}{}
 		for _, a := range intfMethod.Type.Params {
 			bodyCallArgs = append(bodyCallArgs, a.Name)
+		}
+		if intfMethod.Type.Variadic != nil {
+			bodyCallArgs = append(bodyCallArgs, intfMethod.Type.Variadic.Name+"...")
 		}
 		methodBody := fmt.Sprintf(bodyCallFmt, bodyCallArgs...)
 

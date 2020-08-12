@@ -204,14 +204,13 @@ func (t *TypeFunc) PrintDef(myPkgPath string, pm PackageMap) string {
 func (t *TypeFunc) printArgs(myPkgPath string, pm PackageMap) string {
 	// args
 	s := "("
-	for i, param := range t.Params {
-		if i != 0 {
-			s += ", "
-		}
+	for _, param := range t.Params {
 		s += param.PrintNameAndType(myPkgPath, pm)
+		s += ","
 	}
+	s = strings.TrimRight(s, ",")
 	if t.Variadic != nil {
-		s += fmt.Sprintf("%s ...%s", t.Variadic.Name, t.Variadic.Type.PrintDef(myPkgPath, pm))
+		s += fmt.Sprintf(",%s ...%s", t.Variadic.Name, t.Variadic.Type.PrintDef(myPkgPath, pm))
 	}
 	s += ")"
 	return s
@@ -254,7 +253,7 @@ func (t *TypeFunc) PrintCallArgsFmt() string {
 		fmt += "%s,"
 	}
 	if t.Variadic != nil {
-		fmt += " %s,"
+		fmt += "%s,"
 	}
 	fmt = strings.TrimRight(fmt, ",")
 	fmt += ")"

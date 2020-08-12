@@ -173,7 +173,20 @@ func (p *Parser) parseSigature(t *types.Signature) (model.Type, error) {
 	}
 	var variadic *model.Parameter
 	if t.Variadic() {
-		variadic = params[len(params)-1]
+		// If variadic is set, the function is variadic,
+		// *types.Signature must have at least one parameter,
+		// and the last parameter must be of unnamed slice type.
+		lastParam := params[len(params)-1]
+		slice, ok := lastParam.Type.(*model.TypeArray)
+		if !ok {
+			err = fmt.Errorf("internal error. %s is %T", lastParam.Name, lastParam.Type)
+			p.log.Println(err)
+			return nil, err
+		}
+		variadic = &model.Parameter{
+			Name: lastParam.Name,
+			Type: slice.Type,
+		}
 		params = params[:len(params)-1]
 	}
 
