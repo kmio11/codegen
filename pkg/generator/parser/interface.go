@@ -6,7 +6,7 @@ import (
 	"go/types"
 )
 
-func (p *Parser) parseInterface(obj types.Object) (*model.Interface, error) {
+func (p *Parser) parseInterfaceObj(obj types.Object) (*model.Interface, error) {
 	mset, err := p.getMethodSet(obj, false)
 	if err != nil {
 		return nil, err

@@ -19,6 +19,8 @@ func (p *Parser) parseType(t types.Type) (model.Type, error) {
 		m, err = p.parseBasic(tt)
 	case *types.Chan:
 		m, err = p.parseChan(tt)
+	case *types.Interface:
+		m, err = p.parseInterfaceTmp(tt)
 	case *types.Map:
 		m, err = p.parseMap(tt)
 	case *types.Named:
@@ -27,12 +29,13 @@ func (p *Parser) parseType(t types.Type) (model.Type, error) {
 		m, err = p.parsePointer(tt)
 	case *types.Signature:
 		m, err = p.parseSigature(tt)
+	case *types.Struct:
+		m, err = p.parseStruct(tt)
 	default:
-		err = fmt.Errorf("unsupported type: %s", tt.String())
+		err = fmt.Errorf("unexpected type: %s", tt.String())
 	}
 
 	if err != nil {
-		p.log.Println(err)
 		return nil, err
 	}
 	return m, nil
@@ -87,6 +90,50 @@ func (p *Parser) parseChan(t *types.Chan) (model.Type, error) {
 	}, nil
 }
 
+func (p *Parser) parseInterfaceTmp(t *types.Interface) (model.Type, error) {
+	embeddeds := []model.Type{}
+	for i := 0; i < t.NumEmbeddeds(); i++ {
+		embedded, err := p.parseType(t.EmbeddedType(i))
+		if err != nil {
+			return nil, err
+		}
+		embeddeds = append(embeddeds, embedded)
+	}
+
+	emethods := []*model.Func{}
+	for i := 0; i < t.NumExplicitMethods(); i++ {
+		tf := t.ExplicitMethod(i)
+		emethod, err := p.parseFunc(tf)
+		if err != nil {
+			return nil, err
+		}
+
+		emethods = append(emethods, emethod)
+	}
+
+	return &model.TypeInterface{
+		Embeddeds:       embeddeds,
+		ExplicitMethods: emethods,
+	}, nil
+}
+
+func (p *Parser) parseFunc(t *types.Func) (*model.Func, error) {
+	// *types.Func's Type() is always a *Signature
+	sig, _ := t.Type().(*types.Signature)
+	typ, err := p.parseSigature(sig)
+	if err != nil {
+		return nil, err
+	}
+	typf, ok := typ.(*model.TypeFunc)
+	if !ok {
+		err = fmt.Errorf("internal error. not function: %s", t.String())
+		p.log.Println(err)
+		return nil, err
+	}
+
+	return model.NewFunc(t.Name(), typf, ""), nil
+}
+
 func (p *Parser) parseMap(t *types.Map) (model.Type, error) {
 	k, err := p.parseType(t.Key())
 	if err != nil {
@@ -126,7 +173,7 @@ func (p *Parser) parseSigature(t *types.Signature) (model.Type, error) {
 	}
 	var variadic *model.Parameter
 	if t.Variadic() {
-		variadic = params[len(params)]
+		variadic = params[len(params)-1]
 		params = params[:len(params)-1]
 	}
 
@@ -139,6 +186,26 @@ func (p *Parser) parseSigature(t *types.Signature) (model.Type, error) {
 		Params:   params,
 		Variadic: variadic,
 		Results:  results,
+	}, nil
+}
+
+func (p *Parser) parseStruct(t *types.Struct) (model.Type, error) {
+	fields := []*model.Field{}
+	for i := 0; i < t.NumFields(); i++ {
+		f := t.Field(i)
+		name := f.Name()
+		if f.Embedded() {
+			name = ""
+		}
+		typ, err := p.parseType(f.Type())
+		if err != nil {
+			return nil, err
+		}
+		fields = append(fields, model.NewField(name, typ, t.Tag(i)))
+	}
+
+	return &model.TypeStruct{
+		Fields: fields,
 	}, nil
 }
 

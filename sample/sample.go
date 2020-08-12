@@ -13,6 +13,19 @@ type SomeInterface interface {
 	Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int) (map[string]string, error)
 	Baa(d dummy.Dummy, d2 dummy2.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request)
 	Baz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
+	Qux(
+		i interface{},
+		ii interface {
+			SomeInterface
+			Func(x int) int
+		},
+		s struct{},
+		ss struct {
+			dummy.Dummy
+			em  dummy2.Dummy2
+			str string
+		},
+	)
 }
 
 // NewSomeImplFunc generate SomeImpl
@@ -38,4 +51,21 @@ func (*SomeImpl) Baa(d dummy.Dummy, d2 dummy2.Dummy2, ss SomeStruct, i io.Writer
 // Baz is Baz
 func (*SomeImpl) Baz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int) {
 	return
+}
+
+// Qux is Qux
+func (*SomeImpl) Qux(
+	i interface{},
+	ii interface {
+		SomeInterface
+		Func(x int) int
+	},
+	s struct{},
+	ss struct {
+		dummy.Dummy
+		em  dummy2.Dummy2
+		str string
+	},
+) {
+
 }

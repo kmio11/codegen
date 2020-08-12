@@ -78,6 +78,42 @@ func (t *TypeChan) addImports(pm *PackageMap) {
 	t.Type.addImports(pm)
 }
 
+// TypeInterface is interface type
+type TypeInterface struct {
+	Embeddeds       []Type
+	ExplicitMethods []*Func
+}
+
+// PrintDef returns type defenition.
+func (t *TypeInterface) PrintDef(myPkgPath string, pm PackageMap) string {
+	/*
+		interface{Embedded ;Func(); Func()}
+	*/
+
+	str := "interface{"
+	for _, e := range t.Embeddeds {
+		str += e.PrintDef(myPkgPath, pm)
+		str += ";"
+	}
+	for _, e := range t.ExplicitMethods {
+		str += e.PrintDef(myPkgPath, pm)
+		str += ";"
+	}
+	str = strings.TrimRight(str, ";")
+	str += "}"
+
+	return str
+}
+
+func (t *TypeInterface) addImports(pm *PackageMap) {
+	for _, e := range t.Embeddeds {
+		e.addImports(pm)
+	}
+	for _, e := range t.ExplicitMethods {
+		e.addImports(pm)
+	}
+}
+
 // TypeMap is map type.
 type TypeMap struct {
 	Key   Type
@@ -223,4 +259,31 @@ func (t *TypeFunc) PrintCallArgsFmt() string {
 	fmt = strings.TrimRight(fmt, ",")
 	fmt += ")"
 	return fmt
+}
+
+// TypeStruct is struct type.
+type TypeStruct struct {
+	Fields []*Field
+}
+
+// PrintDef returns type defenition.
+func (t *TypeStruct) PrintDef(myPkgPath string, pm PackageMap) string {
+	/*
+		struct{n XX; n XX}
+	*/
+	str := "struct{"
+	for _, f := range t.Fields {
+		str += f.PrintDef(myPkgPath, pm)
+		str += ";"
+	}
+	str = strings.TrimRight(str, ";")
+	str += "}"
+
+	return str
+}
+
+func (t *TypeStruct) addImports(pm *PackageMap) {
+	for _, f := range t.Fields {
+		f.addImports(pm)
+	}
 }

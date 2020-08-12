@@ -14,6 +14,14 @@ type MockSomeInterface struct {
 	FakeBaa func(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request)
 	FakeBaz func(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
 	FakeFoo func(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int) (map[string]string, error)
+	FakeQux func(i interface{}, ii interface {
+		SomeInterface
+		Func(x int) int
+	}, s struct{}, ss struct {
+		dummy.Dummy
+		em  dummy0.Dummy2
+		str string
+	})
 }
 
 func (m MockSomeInterface) Baa(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request) {
@@ -26,4 +34,15 @@ func (m MockSomeInterface) Baz(fn func(a int, b int, c dummy.Dummy) error, n int
 
 func (m MockSomeInterface) Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int) (map[string]string, error) {
 	return m.FakeFoo(arr, slice, n, chs, chr, chrs, ip)
+}
+
+func (m MockSomeInterface) Qux(i interface{}, ii interface {
+	SomeInterface
+	Func(x int) int
+}, s struct{}, ss struct {
+	dummy.Dummy
+	em  dummy0.Dummy2
+	str string
+}) {
+	m.FakeQux(i, ii, s, ss)
 }

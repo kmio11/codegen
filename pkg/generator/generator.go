@@ -28,8 +28,7 @@ func (g *Generator) Printf(format string, args ...interface{}) {
 func (g *Generator) Format() []byte {
 	src, err := format.Source(g.buf.Bytes())
 	if err != nil {
-		log.Printf("warning: internal error: invalid Go generated: %s", err)
-		log.Printf("warning: compile the package to analyze the error")
+		log.Printf("warning: invalid code generated: %s", err)
 		return g.buf.Bytes()
 	}
 	return src

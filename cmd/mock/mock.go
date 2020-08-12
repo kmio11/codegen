@@ -28,11 +28,14 @@ usage:
     mock -pkg <package> -type <type> [-out <out>] [-outpkg <outpkg> [-selfpkg <selfpkg>]]
 `
 
-func usage() {
+func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s\n", usageTxt)
 		flag.PrintDefaults()
 	}
+}
+
+func usage() {
 	flag.Usage()
 	os.Exit(2)
 }
@@ -130,8 +133,8 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 	mockImpl := model.NewStruct(mockName)
 
 	// add interface to mock
-	mockImpl.AddMember(
-		model.NewMember(
+	mockImpl.AddField(
+		model.NewField(
 			"",
 			model.NewTypeNamed(
 				model.NewPkgInfo(
@@ -148,8 +151,8 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 	for _, intfMethod := range targetIntf.Methods { //TODO: need to sort?
 		// FakeFunction
 		fakeFuncName := "Fake" + intfMethod.Name
-		mockImpl.AddMember(
-			model.NewMember(
+		mockImpl.AddField(
+			model.NewField(
 				fakeFuncName,
 				intfMethod.Type,
 				"",

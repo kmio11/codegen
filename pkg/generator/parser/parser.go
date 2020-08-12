@@ -51,7 +51,6 @@ func (p *Parser) Parse() (*model.Package, error) {
 		return nil, err
 	}
 	for _, tname := range p.Targets {
-		p.log.Printf("parse target: %s\n", tname)
 		err = p.setContents(pkg, tname)
 		if err != nil {
 			p.log.Println(err)
@@ -85,7 +84,7 @@ func (p *Parser) setContents(pkg *model.Package, name string) error {
 	}
 
 	if types.IsInterface(obj.Type()) {
-		intf, err := p.parseInterface(obj)
+		intf, err := p.parseInterfaceObj(obj)
 		if err != nil {
 			return err
 		}

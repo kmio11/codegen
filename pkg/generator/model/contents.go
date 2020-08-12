@@ -67,7 +67,7 @@ func (i *Interface) PrintCode(myPkgPath string, pm PackageMap) string {
 type Struct struct {
 	Name    string
 	Methods []*Method
-	Members []*Member
+	Fields  []*Field
 }
 
 // NewStruct return Struct
@@ -75,7 +75,7 @@ func NewStruct(name string) *Struct {
 	return &Struct{
 		Name:    name,
 		Methods: []*Method{},
-		Members: []*Member{},
+		Fields:  []*Field{},
 	}
 }
 
@@ -83,7 +83,7 @@ func (s *Struct) addImports(pm *PackageMap) {
 	for _, m := range s.Methods {
 		m.addImports(pm)
 	}
-	for _, m := range s.Members {
+	for _, m := range s.Fields {
 		m.addImports(pm)
 	}
 }
@@ -100,7 +100,7 @@ func (s *Struct) PrintCode(myPkgPath string, pm PackageMap) string {
 		}
 	*/
 	str := fmt.Sprintf("type %s struct{", s.Name)
-	for _, m := range s.Members {
+	for _, m := range s.Fields {
 		str += "\n"
 		str += m.PrintDef(myPkgPath, pm)
 	}
@@ -115,9 +115,9 @@ func (s *Struct) PrintCode(myPkgPath string, pm PackageMap) string {
 	return str
 }
 
-// AddMember add member to struct
-func (s *Struct) AddMember(m *Member) {
-	s.Members = append(s.Members, m)
+// AddField add field to struct
+func (s *Struct) AddField(m *Field) {
+	s.Fields = append(s.Fields, m)
 }
 
 // AddMethod add method to struct
@@ -125,16 +125,17 @@ func (s *Struct) AddMethod(m *Method) {
 	s.Methods = append(s.Methods, m)
 }
 
-// Member is member of struct.
-type Member struct {
+// Field is field of struct.
+// If Parameter.Name is brank, it represents embeded field.
+type Field struct {
 	Parameter
 	Tag string
 }
 
-// NewMember returns Member
-func NewMember(name string, t Type, tag string) *Member {
+// NewField returns Field
+func NewField(name string, t Type, tag string) *Field {
 	p := NewParameter(name, t)
-	return &Member{
+	return &Field{
 		Parameter: Parameter{
 			Name: p.Name,
 			Type: p.Type,
@@ -144,7 +145,7 @@ func NewMember(name string, t Type, tag string) *Member {
 }
 
 // PrintDef print name ,type and tag(if exist) .
-func (m *Member) PrintDef(myPkgPath string, pm PackageMap) string {
+func (m *Field) PrintDef(myPkgPath string, pm PackageMap) string {
 	if m.Tag != "" {
 		return fmt.Sprintf("%s `%s`", m.Parameter.PrintNameAndType(myPkgPath, pm), m.Tag)
 	}
@@ -205,6 +206,14 @@ func NewFunc(name string, t *TypeFunc, body string) *Func {
 		Type: t,
 		Body: body,
 	}
+}
+
+// PrintDef print Name and Params and Results
+func (f *Func) PrintDef(myPkgPath string, pm PackageMap) string {
+	/*
+		Func(x int) int
+	*/
+	return f.Name + f.Type.printArgs(myPkgPath, pm) + f.Type.printResults(myPkgPath, pm)
 }
 
 // PrintCode print code.
