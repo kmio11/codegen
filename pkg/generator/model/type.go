@@ -137,10 +137,10 @@ type TypeNamed struct {
 }
 
 // NewTypeNamed returns TypeNamed.
-func NewTypeNamed(pkg *PkgInfo, t string) Type {
+func NewTypeNamed(pkg *PkgInfo, typ string) Type {
 	return &TypeNamed{
 		Pkg:  pkg,
-		Type: t,
+		Type: typ,
 	}
 }
 
@@ -189,6 +189,15 @@ type TypeSignature struct {
 	Params   []*Parameter
 	Variadic *Parameter
 	Results  []*Parameter
+}
+
+// NewTypeSignature returns TypeSignature.
+func NewTypeSignature(params []*Parameter, variadic *Parameter, results []*Parameter) *TypeSignature {
+	return &TypeSignature{
+		Params:   params,
+		Variadic: variadic,
+		Results:  results,
+	}
 }
 
 // PrintDef returns type defenition.

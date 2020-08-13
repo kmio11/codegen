@@ -39,10 +39,11 @@ func (p *Parser) parseInterfaceObj(obj types.Object) (*model.Interface, error) {
 			})
 	}
 
-	intf := &model.Interface{
-		Name:    obj.Name(),
-		Methods: methods,
-	}
+	intf := model.NewInterface(
+		obj.Name(),
+		model.NewPkgInfo(obj.Pkg().Name(), obj.Pkg().Path(), ""),
+		methods,
+	)
 	return intf, nil
 }
 

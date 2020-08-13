@@ -2,47 +2,42 @@
 // Mock for codegen/sample.SomeInterface
 package sample
 
-import (
-	"codegen/sample/dummy"
-	dummy0 "codegen/sample/dummy2"
-	"github.com/ant0ine/go-json-rest/rest"
-	"io"
-)
-
 type MockSomeInterface struct {
 	SomeInterface
-	FakeBaa func(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request)
-	FakeBaz func(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
-	FakeFoo func(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
-	FakeQux func(i interface{}, ii interface {
-		SomeInterface
-		Func(x int) int
-	}, s struct{}, ss struct {
-		dummy.Dummy
-		em  dummy0.Dummy2
-		str string
-	})
+	FakeAdd  func(x int, y int) (int, error)
+	FakeName func() string
 }
 
-func (m MockSomeInterface) Baa(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request) {
-	m.FakeBaa(d, d2, ss, i, si, r)
+func (m MockSomeInterface) Add(x int, y int) (int, error) {
+	return m.FakeAdd(x, y)
 }
 
-func (m MockSomeInterface) Baz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int) {
-	return m.FakeBaz(fn, n)
+func (m MockSomeInterface) Name() string {
+	return m.FakeName()
 }
 
-func (m MockSomeInterface) Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error) {
-	return m.FakeFoo(arr, slice, n, chs, chr, chrs, ip, v...)
+type StubSomeInterface struct {
+	Add  StubAdd
+	Name StubName
 }
 
-func (m MockSomeInterface) Qux(i interface{}, ii interface {
-	SomeInterface
-	Func(x int) int
-}, s struct{}, ss struct {
-	dummy.Dummy
-	em  dummy0.Dummy2
-	str string
-}) {
-	m.FakeQux(i, ii, s, ss)
+func (s StubSomeInterface) NewMock() SomeInterface {
+	return &MockSomeInterface{FakeAdd: s.FakeAdd, FakeName: s.FakeName}
+}
+
+func (s StubSomeInterface) FakeAdd(x int, y int) (int, error) {
+	return s.Add.R0, s.Add.R1
+}
+
+func (s StubSomeInterface) FakeName() string {
+	return s.Name.R0
+}
+
+type StubAdd struct {
+	R0 int
+	R1 error
+}
+
+type StubName struct {
+	R0 string
 }

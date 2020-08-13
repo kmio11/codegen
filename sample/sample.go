@@ -1,71 +1,30 @@
 package sample
 
-import (
-	"codegen/sample/dummy"
-	dummy2 "codegen/sample/dummy2"
-	"io"
-
-	"github.com/ant0ine/go-json-rest/rest"
-)
-
-// SomeInterface is sample.
+// SomeInterface is interface (to be mocked.)
 type SomeInterface interface {
-	Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
-	Baa(d dummy.Dummy, d2 dummy2.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request)
-	Baz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
-	Qux(
-		i interface{},
-		ii interface {
-			SomeInterface
-			Func(x int) int
-		},
-		s struct{},
-		ss struct {
-			dummy.Dummy
-			em  dummy2.Dummy2
-			str string
-		},
-	)
+	Name() string
+	Add(x int, y int) (int, error)
 }
 
-// NewSomeImplFunc generate SomeImpl
-var NewSomeImplFunc = func() (SomeInterface, error) {
-	return &SomeImpl{}, nil
-}
-
-// SomeImpl is Impliment of SomeInterface
+// SomeImpl is impliment of SampleInterface
 type SomeImpl struct {
-	S string
+	name string
 }
 
-// Foo is Foo
-func (*SomeImpl) Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error) {
-	return nil, nil
+var NewSomeImplFunc = func(name string) SomeInterface {
+	return &SomeImpl{
+		name: name,
+	}
 }
 
-// Baa is Baa
-func (*SomeImpl) Baa(d dummy.Dummy, d2 dummy2.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request) {
-
+func NewSomeImpl(name string) SomeInterface {
+	return NewSomeImplFunc(name)
 }
 
-// Baz is Baz
-func (*SomeImpl) Baz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int) {
-	return
+func (s *SomeImpl) Name() string {
+	return s.name
 }
 
-// Qux is Qux
-func (*SomeImpl) Qux(
-	i interface{},
-	ii interface {
-		SomeInterface
-		Func(x int) int
-	},
-	s struct{},
-	ss struct {
-		dummy.Dummy
-		em  dummy2.Dummy2
-		str string
-	},
-) {
-
+func (s *SomeImpl) Add(x int, y int) (int, error) {
+	return x + y, nil
 }

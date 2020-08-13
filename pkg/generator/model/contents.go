@@ -37,7 +37,17 @@ type Contents interface {
 // Interface is interface.
 type Interface struct {
 	Name    string
+	Type    *TypeNamed
 	Methods []*Method
+}
+
+// NewInterface returns Interface.
+func NewInterface(name string, pkg *PkgInfo, methods []*Method) *Interface {
+	return &Interface{
+		Name:    name,
+		Type:    NewTypeNamed(pkg, name).(*TypeNamed),
+		Methods: methods,
+	}
 }
 
 func (i Interface) addImports(pm *PackageMap) {
@@ -66,20 +76,23 @@ func (i *Interface) PrintCode(myPkgPath string, pm PackageMap) string {
 // Struct is struct.
 type Struct struct {
 	Name    string
+	Type    *TypeNamed
 	Methods []*Method
 	Fields  []*Field
 }
 
 // NewStruct return Struct
-func NewStruct(name string) *Struct {
+func NewStruct(name string, pkg *PkgInfo) *Struct {
 	return &Struct{
 		Name:    name,
+		Type:    NewTypeNamed(pkg, name).(*TypeNamed),
 		Methods: []*Method{},
 		Fields:  []*Field{},
 	}
 }
 
 func (s *Struct) addImports(pm *PackageMap) {
+	s.Type.addImports(pm)
 	for _, m := range s.Methods {
 		m.addImports(pm)
 	}
