@@ -138,6 +138,55 @@ func mockfile(targetPkg *model.Package, targetIntf *model.Interface) *model.File
 	return file
 }
 
+const (
+	mockRcvName = "m"
+	stubRcvName = "s"
+)
+
+func getMockFieldName(intfMethodName string) string {
+	return "Fake" + intfMethodName
+}
+
+func getMockArgsName(i int) string {
+	return "a" + strconv.Itoa(i)
+}
+
+func getMockResultsName(i int) string {
+	return ""
+}
+
+func getStubMethodName(intfMethodName string) string {
+	return getMockFieldName(intfMethodName)
+}
+
+// fmtSignature returns *mode.TypeSignature
+// param and results names replaced by no duplication names.
+func fmtSignature(org *model.TypeSignature) *model.TypeSignature {
+	methodParams := []*model.Parameter{}
+	var n int
+	for _, p := range org.Params {
+		methodParams = append(methodParams,
+			model.NewParameter(getMockArgsName(n), p.Type),
+		)
+		n++
+	}
+	var methodVariadic *model.Parameter
+	if org.Variadic != nil {
+		methodVariadic = model.NewParameter(getMockArgsName(n), org.Variadic.Type)
+	}
+	methodResults := []*model.Parameter{}
+	for i, r := range org.Results {
+		methodResults = append(methodResults,
+			model.NewParameter(getMockResultsName(i), r.Type),
+		)
+	}
+	return model.NewTypeSignature(
+		methodParams,
+		methodVariadic,
+		methodResults,
+	)
+}
+
 func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.PkgInfo) *model.Struct {
 	//mock struct
 	mockName := "Mock" + targetIntf.Name
@@ -159,8 +208,8 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 		),
 	)
 
-	for _, intfMethod := range targetIntf.Methods { //TODO: need to sort?
-		// FakeFunction
+	for _, intfMethod := range targetIntf.Methods {
+		// Mock's Fields: FakeFunction
 		fakeFuncName := getMockFieldName(intfMethod.Name)
 		mockImpl.AddField(
 			model.NewField(
@@ -170,10 +219,9 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 			),
 		)
 
-		// method
-		methodRcvName := "m"
+		// Mock's methods
 		methodRcv := *model.NewParameter(
-			methodRcvName,
+			mockRcvName,
 			model.NewTypeNamed(
 				outPkg,
 				mockImpl.Name,
@@ -182,20 +230,22 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 
 		// method body
 		/*
-			return FakeXxx(x, x, x)
+			return FakeXxx(a0, a1, a2)
 		*/
 		var bodyCallFmt string
 		if len(intfMethod.Type.Results) != 0 {
 			bodyCallFmt += "return "
 		}
-		bodyCallFmt += methodRcvName + "." + fakeFuncName + intfMethod.Type.PrintCallArgsFmt()
+		bodyCallFmt += mockRcvName + "." + fakeFuncName + intfMethod.Type.PrintCallArgsFmt()
 
 		bodyCallArgs := []interface{}{}
-		for _, a := range intfMethod.Type.Params {
-			bodyCallArgs = append(bodyCallArgs, a.Name)
+		var n int
+		for range intfMethod.Type.Params {
+			bodyCallArgs = append(bodyCallArgs, getMockArgsName(n))
+			n++
 		}
 		if intfMethod.Type.Variadic != nil {
-			bodyCallArgs = append(bodyCallArgs, intfMethod.Type.Variadic.Name+"...")
+			bodyCallArgs = append(bodyCallArgs, getMockArgsName(n)+"...")
 		}
 		methodBody := fmt.Sprintf(bodyCallFmt, bodyCallArgs...)
 
@@ -204,7 +254,7 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 			model.NewMethod(
 				methodRcv,
 				intfMethod.Name,
-				intfMethod.Type,
+				fmtSignature(intfMethod.Type),
 				methodBody,
 			),
 		)
@@ -212,24 +262,16 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 	return mockImpl
 }
 
-func getMockFieldName(intfMethodName string) string {
-	return "Fake" + intfMethodName
-}
-
-func getStubMethodName(intfMethodName string) string {
-	return getMockFieldName(intfMethodName)
-}
-
 func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.PkgInfo, mockImpl *model.Struct) (stubRoot *model.Struct, stubs []*model.Struct) {
 	stubRootName := "Stub" + targetIntf.Name
 	stubRoot = model.NewStruct(stubRootName, outPkg)
-	stubRootRcv := *model.NewParameter("s", stubRoot.Type)
+	stubRootRcv := *model.NewParameter(stubRcvName, stubRoot.Type)
 	stubMethods := []*model.Method{}
 
 	mockInitVals := map[string]string{} // for NewMockBody
 
 	stubs = []*model.Struct{}
-	for _, intfMethod := range targetIntf.Methods { //TODO: need to sort?
+	for _, intfMethod := range targetIntf.Methods {
 		// stub for each intf's method.
 		stubName := "Stub" + intfMethod.Name
 		stub := model.NewStruct(stubName, outPkg)
@@ -266,7 +308,7 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 			model.NewMethod(
 				stubRootRcv,
 				stubMethodName,
-				intfMethod.Type,
+				fmtSignature(intfMethod.Type),
 				stubMethodBody,
 			),
 		)
@@ -302,6 +344,3 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 
 	return
 }
-
-//TODO: レシーバ名と変数名の重複チェック
-//TODO: メソッド名の重複チェック

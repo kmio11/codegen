@@ -11,10 +11,10 @@ import (
 
 type MockSomeInterface struct {
 	SomeInterface
-	FakeBaa func(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request)
-	FakeBaz func(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
-	FakeFoo func(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
-	FakeQux func(i interface{}, ii interface {
+	FakeFuncA func(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
+	FakeFuncB func(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request)
+	FakeFuncC func(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
+	FakeFuncD func(i interface{}, ii interface {
 		SomeInterface
 		Func(x int) int
 	}, s struct{}, ss struct {
@@ -22,58 +22,64 @@ type MockSomeInterface struct {
 		em  dummy0.Dummy2
 		str string
 	})
+	FakeFuncE func(string, string, int)
 }
 
-func (m MockSomeInterface) Baa(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request) {
-	m.FakeBaa(d, d2, ss, i, si, r)
+func (m MockSomeInterface) FuncA(a0 [2]string, a1 []int, a2 int, a3 <-chan string, a4 chan<- int, a5 chan int64, a6 *int, a7 ...string) (map[string]string, error) {
+	return m.FakeFuncA(a0, a1, a2, a3, a4, a5, a6, a7...)
 }
 
-func (m MockSomeInterface) Baz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int) {
-	return m.FakeBaz(fn, n)
+func (m MockSomeInterface) FuncB(a0 dummy.Dummy, a1 dummy0.Dummy2, a2 SomeStruct, a3 io.Writer, a4 SomeInterface, a5 *rest.Request) {
+	m.FakeFuncB(a0, a1, a2, a3, a4, a5)
 }
 
-func (m MockSomeInterface) Foo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error) {
-	return m.FakeFoo(arr, slice, n, chs, chr, chrs, ip, v...)
+func (m MockSomeInterface) FuncC(a0 func(a int, b int, c dummy.Dummy) error, a1 int) (string, int) {
+	return m.FakeFuncC(a0, a1)
 }
 
-func (m MockSomeInterface) Qux(i interface{}, ii interface {
+func (m MockSomeInterface) FuncD(a0 interface{}, a1 interface {
 	SomeInterface
 	Func(x int) int
-}, s struct{}, ss struct {
+}, a2 struct{}, a3 struct {
 	dummy.Dummy
 	em  dummy0.Dummy2
 	str string
 }) {
-	m.FakeQux(i, ii, s, ss)
+	m.FakeFuncD(a0, a1, a2, a3)
+}
+
+func (m MockSomeInterface) FuncE(a0 string, a1 string, a2 int) {
+	m.FakeFuncE(a0, a1, a2)
 }
 
 type StubSomeInterface struct {
-	Baa StubBaa
-	Baz StubBaz
-	Foo StubFoo
-	Qux StubQux
+	FuncA StubFuncA
+	FuncB StubFuncB
+	FuncC StubFuncC
+	FuncD StubFuncD
+	FuncE StubFuncE
 }
 
 func (s StubSomeInterface) NewMock() SomeInterface {
-	return &MockSomeInterface{FakeBaa: s.FakeBaa, FakeBaz: s.FakeBaz, FakeFoo: s.FakeFoo, FakeQux: s.FakeQux}
+	return &MockSomeInterface{FakeFuncB: s.FakeFuncB, FakeFuncC: s.FakeFuncC, FakeFuncD: s.FakeFuncD, FakeFuncE: s.FakeFuncE, FakeFuncA: s.FakeFuncA}
 }
 
-func (s StubSomeInterface) FakeBaa(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *rest.Request) {
+func (s StubSomeInterface) FakeFuncA(a0 [2]string, a1 []int, a2 int, a3 <-chan string, a4 chan<- int, a5 chan int64, a6 *int, a7 ...string) (map[string]string, error) {
+	return s.FuncA.R0, s.FuncA.R1
+}
+
+func (s StubSomeInterface) FakeFuncB(a0 dummy.Dummy, a1 dummy0.Dummy2, a2 SomeStruct, a3 io.Writer, a4 SomeInterface, a5 *rest.Request) {
 	return
 }
 
-func (s StubSomeInterface) FakeBaz(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int) {
-	return s.Baz.R0, s.Baz.R1
+func (s StubSomeInterface) FakeFuncC(a0 func(a int, b int, c dummy.Dummy) error, a1 int) (string, int) {
+	return s.FuncC.R0, s.FuncC.R1
 }
 
-func (s StubSomeInterface) FakeFoo(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error) {
-	return s.Foo.R0, s.Foo.R1
-}
-
-func (s StubSomeInterface) FakeQux(i interface{}, ii interface {
+func (s StubSomeInterface) FakeFuncD(a0 interface{}, a1 interface {
 	SomeInterface
 	Func(x int) int
-}, s struct{}, ss struct {
+}, a2 struct{}, a3 struct {
 	dummy.Dummy
 	em  dummy0.Dummy2
 	str string
@@ -81,18 +87,25 @@ func (s StubSomeInterface) FakeQux(i interface{}, ii interface {
 	return
 }
 
-type StubBaa struct {
+func (s StubSomeInterface) FakeFuncE(a0 string, a1 string, a2 int) {
+	return
 }
 
-type StubBaz struct {
-	R0 string
-	R1 int
-}
-
-type StubFoo struct {
+type StubFuncA struct {
 	R0 map[string]string
 	R1 error
 }
 
-type StubQux struct {
+type StubFuncB struct {
+}
+
+type StubFuncC struct {
+	R0 string
+	R1 int
+}
+
+type StubFuncD struct {
+}
+
+type StubFuncE struct {
 }

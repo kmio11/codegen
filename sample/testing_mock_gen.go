@@ -8,8 +8,8 @@ type MockSomeInterface struct {
 	FakeName func() string
 }
 
-func (m MockSomeInterface) Add(x int, y int) (int, error) {
-	return m.FakeAdd(x, y)
+func (m MockSomeInterface) Add(a0 int, a1 int) (int, error) {
+	return m.FakeAdd(a0, a1)
 }
 
 func (m MockSomeInterface) Name() string {
@@ -25,7 +25,7 @@ func (s StubSomeInterface) NewMock() SomeInterface {
 	return &MockSomeInterface{FakeAdd: s.FakeAdd, FakeName: s.FakeName}
 }
 
-func (s StubSomeInterface) FakeAdd(x int, y int) (int, error) {
+func (s StubSomeInterface) FakeAdd(a0 int, a1 int) (int, error) {
 	return s.Add.R0, s.Add.R1
 }
 
