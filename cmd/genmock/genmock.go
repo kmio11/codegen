@@ -1,9 +1,10 @@
 package main
 
 import (
-	"codegen/pkg/generator"
-	"codegen/pkg/generator/model"
-	"codegen/pkg/generator/parser"
+	"github.com/kmio11/codegen/generator"
+	"github.com/kmio11/codegen/generator/model"
+	"github.com/kmio11/codegen/generator/parser"
+
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -14,7 +15,7 @@ import (
 )
 
 const (
-	cmdName = "mock"
+	cmdName = "genmock"
 )
 
 var (

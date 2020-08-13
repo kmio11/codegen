@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"codegen/pkg/generator/model"
 	"fmt"
 	"go/types"
+
+	"github.com/kmio11/codegen/generator/model"
 )
 
 func (p *Parser) parseType(t types.Type) (model.Type, error) {

@@ -1,11 +1,12 @@
 package parser
 
 import (
-	"codegen/pkg/generator/model"
 	"fmt"
 	"go/types"
 	"io/ioutil"
 	"log"
+
+	"github.com/kmio11/codegen/generator/model"
 )
 
 const (
