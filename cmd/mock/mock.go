@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	cmdName = "genmock"
+	cmdName = "mock"
 )
 
 var (
@@ -76,6 +76,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("writing output: %s", err)
 		}
+		fmt.Printf("File created successfully : %s ", file.Path)
 	}
 
 	os.Exit(0)
