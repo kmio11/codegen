@@ -169,9 +169,9 @@ type TypePointer struct {
 }
 
 // NewPointer returns pointer of the type.
-func NewPointer(t Type) Type {
+func NewPointer(typ Type) Type {
 	return &TypePointer{
-		Type: t,
+		Type: typ,
 	}
 }
 

@@ -15,10 +15,10 @@ func (p *Parameter) addImports(pm *PackageMap) {
 }
 
 // NewParameter returns Parameter.
-func NewParameter(name string, t Type) *Parameter {
+func NewParameter(name string, typ Type) *Parameter {
 	return &Parameter{
 		Name: name,
-		Type: t,
+		Type: typ,
 	}
 }
 
@@ -146,8 +146,8 @@ type Field struct {
 }
 
 // NewField returns Field
-func NewField(name string, t Type, tag string) *Field {
-	p := NewParameter(name, t)
+func NewField(name string, typ Type, tag string) *Field {
+	p := NewParameter(name, typ)
 	return &Field{
 		Parameter: Parameter{
 			Name: p.Name,
@@ -172,8 +172,8 @@ type Method struct {
 }
 
 // NewMethod returns Method.
-func NewMethod(rcv Parameter, name string, t *TypeSignature, body string) *Method {
-	f := NewFunc(name, t, body)
+func NewMethod(rcv Parameter, name string, typ *TypeSignature, body string) *Method {
+	f := NewFunc(name, typ, body)
 	return &Method{
 		Reciever: rcv,
 		Func: Func{
@@ -213,10 +213,10 @@ type Func struct {
 }
 
 // NewFunc returns Func.
-func NewFunc(name string, t *TypeSignature, body string) *Func {
+func NewFunc(name string, typ *TypeSignature, body string) *Func {
 	return &Func{
 		Name: name,
-		Type: t,
+		Type: typ,
 		Body: body,
 	}
 }
