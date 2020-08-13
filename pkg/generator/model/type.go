@@ -184,15 +184,15 @@ func (t *TypePointer) addImports(pm *PackageMap) {
 	t.Type.addImports(pm)
 }
 
-// TypeFunc is function.
-type TypeFunc struct {
+// TypeSignature is function.
+type TypeSignature struct {
 	Params   []*Parameter
 	Variadic *Parameter
 	Results  []*Parameter
 }
 
 // PrintDef returns type defenition.
-func (t *TypeFunc) PrintDef(myPkgPath string, pm PackageMap) string {
+func (t *TypeSignature) PrintDef(myPkgPath string, pm PackageMap) string {
 	s := "func"
 	s += t.printArgs(myPkgPath, pm)
 	s += t.printResults(myPkgPath, pm)
@@ -201,7 +201,7 @@ func (t *TypeFunc) PrintDef(myPkgPath string, pm PackageMap) string {
 
 // PrintParams print params
 // for example : (x int, y int)
-func (t *TypeFunc) printArgs(myPkgPath string, pm PackageMap) string {
+func (t *TypeSignature) printArgs(myPkgPath string, pm PackageMap) string {
 	// args
 	s := "("
 	for _, param := range t.Params {
@@ -216,7 +216,7 @@ func (t *TypeFunc) printArgs(myPkgPath string, pm PackageMap) string {
 	return s
 }
 
-func (t *TypeFunc) printResults(myPkgPath string, pm PackageMap) string {
+func (t *TypeSignature) printResults(myPkgPath string, pm PackageMap) string {
 	s := ""
 	if len(t.Results) > 1 {
 		s += "("
@@ -233,7 +233,7 @@ func (t *TypeFunc) printResults(myPkgPath string, pm PackageMap) string {
 	return s
 }
 
-func (t *TypeFunc) addImports(pm *PackageMap) {
+func (t *TypeSignature) addImports(pm *PackageMap) {
 	for _, p := range t.Params {
 		p.addImports(pm)
 	}
@@ -247,7 +247,7 @@ func (t *TypeFunc) addImports(pm *PackageMap) {
 
 // PrintCallArgsFmt returns format to call this function.
 // For exapmle, if the func has tow params, returns "(%s, %s)"
-func (t *TypeFunc) PrintCallArgsFmt() string {
+func (t *TypeSignature) PrintCallArgsFmt() string {
 	fmt := "("
 	for i := 0; i < len(t.Params); i++ {
 		fmt += "%s,"

@@ -28,7 +28,7 @@ func (p *Parser) parseType(t types.Type) (model.Type, error) {
 	case *types.Pointer:
 		m, err = p.parsePointer(tt)
 	case *types.Signature:
-		m, err = p.parseSigature(tt)
+		m, err = p.parseSignature(tt)
 	case *types.Struct:
 		m, err = p.parseStruct(tt)
 	default:
@@ -117,23 +117,6 @@ func (p *Parser) parseInterfaceTmp(t *types.Interface) (model.Type, error) {
 	}, nil
 }
 
-func (p *Parser) parseFunc(t *types.Func) (*model.Func, error) {
-	// *types.Func's Type() is always a *Signature
-	sig, _ := t.Type().(*types.Signature)
-	typ, err := p.parseSigature(sig)
-	if err != nil {
-		return nil, err
-	}
-	typf, ok := typ.(*model.TypeFunc)
-	if !ok {
-		err = fmt.Errorf("internal error. not function: %s", t.String())
-		p.log.Println(err)
-		return nil, err
-	}
-
-	return model.NewFunc(t.Name(), typf, ""), nil
-}
-
 func (p *Parser) parseMap(t *types.Map) (model.Type, error) {
 	k, err := p.parseType(t.Key())
 	if err != nil {
@@ -166,7 +149,7 @@ func (p *Parser) parsePointer(t *types.Pointer) (model.Type, error) {
 	return model.NewPointer(tt), nil
 }
 
-func (p *Parser) parseSigature(t *types.Signature) (model.Type, error) {
+func (p *Parser) parseSignature(t *types.Signature) (model.Type, error) {
 	params, err := p.getParameter(t.Params())
 	if err != nil {
 		return nil, err
@@ -195,7 +178,7 @@ func (p *Parser) parseSigature(t *types.Signature) (model.Type, error) {
 		return nil, err
 	}
 
-	return &model.TypeFunc{
+	return &model.TypeSignature{
 		Params:   params,
 		Variadic: variadic,
 		Results:  results,

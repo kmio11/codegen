@@ -159,7 +159,7 @@ type Method struct {
 }
 
 // NewMethod returns Method.
-func NewMethod(rcv Parameter, name string, t *TypeFunc, body string) *Method {
+func NewMethod(rcv Parameter, name string, t *TypeSignature, body string) *Method {
 	f := NewFunc(name, t, body)
 	return &Method{
 		Reciever: rcv,
@@ -195,12 +195,12 @@ func (m *Method) PrintCode(myPkgPath string, pm PackageMap) string {
 // Func is func.
 type Func struct {
 	Name string
-	Type *TypeFunc
+	Type *TypeSignature
 	Body string
 }
 
 // NewFunc returns Func.
-func NewFunc(name string, t *TypeFunc, body string) *Func {
+func NewFunc(name string, t *TypeSignature, body string) *Func {
 	return &Func{
 		Name: name,
 		Type: t,
