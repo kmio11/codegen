@@ -172,14 +172,14 @@ type Method struct {
 }
 
 // NewMethod returns Method.
-func NewMethod(rcv Parameter, name string, typ *TypeSignature, body string) *Method {
-	f := NewFunc(name, typ, body)
+func NewMethod(rcv Parameter, name string, typ *TypeSignature, statements string) *Method {
+	f := NewFunc(name, typ, statements)
 	return &Method{
 		Reciever: rcv,
 		Func: Func{
-			Name: f.Name,
-			Type: f.Type,
-			Body: f.Body,
+			Name:       f.Name,
+			Type:       f.Type,
+			Statements: f.Statements,
 		},
 	}
 }
@@ -198,7 +198,7 @@ func (m *Method) PrintCode(myPkgPath string, pm PackageMap) string {
 	s += m.Type.printResults(myPkgPath, pm)
 	s += "{\n"
 
-	s += m.Body
+	s += m.Statements
 	s += "\n"
 
 	s += "}\n"
@@ -207,17 +207,17 @@ func (m *Method) PrintCode(myPkgPath string, pm PackageMap) string {
 
 // Func is func.
 type Func struct {
-	Name string
-	Type *TypeSignature
-	Body string
+	Name       string
+	Type       *TypeSignature
+	Statements string
 }
 
 // NewFunc returns Func.
-func NewFunc(name string, typ *TypeSignature, body string) *Func {
+func NewFunc(name string, typ *TypeSignature, statements string) *Func {
 	return &Func{
-		Name: name,
-		Type: typ,
-		Body: body,
+		Name:       name,
+		Type:       typ,
+		Statements: statements,
 	}
 }
 
@@ -242,7 +242,7 @@ func (f *Func) PrintCode(myPkgPath string, pm PackageMap) string {
 	s += f.Type.printResults(myPkgPath, pm)
 	s += "{\n"
 
-	s += f.Body
+	s += f.Statements
 	s += "\n"
 
 	s += "}\n"
@@ -253,7 +253,7 @@ func (f *Func) addImports(pm *PackageMap) {
 	f.Type.addImports(pm)
 }
 
-// SetBody set body.
-func (f *Func) SetBody(body string) {
-	f.Body = body
+// SetStatements set statements.
+func (f *Func) SetStatements(statements string) {
+	f.Statements = statements
 }
