@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	flagPkg         = flag.String("pkg", "", "The package containing interfaces to be mocked.")
+	flagPkg         = flag.String("pkg", ".", "The package containing interfaces to be mocked.")
 	flagType        = flag.String("type", "", "The name of the type to be mocked.")
 	flagOut         = flag.String("out", "", "Output file; defaults to stdout.")
 	flagOutPkg      = flag.String("outpkg", "", "Output package name; defaults to the same package specified by -pkg")
