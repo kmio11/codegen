@@ -1,6 +1,7 @@
 package sample
 
 // SomeInterface is interface (to be mocked.)
+//go:generate go run github.com/kmio11/codegen/cmd/genmock -type SomeInterface -out testing_mock_gen.go
 type SomeInterface interface {
 	Name() string
 	Add(x int, y int) (int, error)

@@ -77,9 +77,9 @@ func main() {
 	} else {
 		err := ioutil.WriteFile(file.Path, src, 0644)
 		if err != nil {
-			log.Fatalf("writing output: %s", err)
+			log.Fatalf("writing output: %s\n", err)
 		}
-		fmt.Printf("File created successfully : %s ", file.Path)
+		fmt.Printf("File created successfully : %s\n", file.Path)
 	}
 
 	os.Exit(0)
