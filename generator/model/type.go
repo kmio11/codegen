@@ -7,7 +7,7 @@ import (
 
 // Type is type.
 type Type interface {
-	PrintDef(myPkgPath string, pm PackageMap) string
+	PrintType(myPkgPath string, pm PackageMap) string
 	addImports(pm *PackageMap)
 }
 
@@ -17,13 +17,13 @@ type TypeArray struct {
 	Type Type
 }
 
-// PrintDef returns type defenition.
-func (t *TypeArray) PrintDef(myPkgPath string, pm PackageMap) string {
+// PrintType returns type.
+func (t *TypeArray) PrintType(myPkgPath string, pm PackageMap) string {
 	s := "[]"
 	if t.Len > -1 {
 		s = fmt.Sprintf("[%d]", t.Len)
 	}
-	return s + t.Type.PrintDef(myPkgPath, pm)
+	return s + t.Type.PrintType(myPkgPath, pm)
 }
 
 func (t *TypeArray) addImports(pm *PackageMap) {
@@ -34,8 +34,8 @@ func (t *TypeArray) addImports(pm *PackageMap) {
 // strings, booleans, and numbers
 type TypeBasic string
 
-// PrintDef returns type defenition.
-func (t *TypeBasic) PrintDef(myPkgPath string, pm PackageMap) string {
+// PrintType returns type.
+func (t *TypeBasic) PrintType(myPkgPath string, pm PackageMap) string {
 	return string(*t)
 }
 
@@ -59,9 +59,9 @@ const (
 	RecvOnly
 )
 
-// PrintDef returns type defenition.
-func (t *TypeChan) PrintDef(myPkgPath string, pm PackageMap) string {
-	s := t.Type.PrintDef(myPkgPath, pm)
+// PrintType returns type.
+func (t *TypeChan) PrintType(myPkgPath string, pm PackageMap) string {
+	s := t.Type.PrintType(myPkgPath, pm)
 	switch t.Dir {
 	case SendRecv:
 		return "chan " + s
@@ -84,15 +84,15 @@ type TypeInterface struct {
 	ExplicitMethods []*Func
 }
 
-// PrintDef returns type defenition.
-func (t *TypeInterface) PrintDef(myPkgPath string, pm PackageMap) string {
+// PrintType returns type.
+func (t *TypeInterface) PrintType(myPkgPath string, pm PackageMap) string {
 	/*
 		interface{Embedded ;Func(); Func()}
 	*/
 
 	str := "interface{"
 	for _, e := range t.Embeddeds {
-		str += e.PrintDef(myPkgPath, pm)
+		str += e.PrintType(myPkgPath, pm)
 		str += ";"
 	}
 	for _, e := range t.ExplicitMethods {
@@ -120,9 +120,9 @@ type TypeMap struct {
 	Value Type
 }
 
-// PrintDef returns type defenition.
-func (t *TypeMap) PrintDef(myPkgPath string, pm PackageMap) string {
-	return fmt.Sprintf("map[%s]%s", t.Key.PrintDef(myPkgPath, pm), t.Value.PrintDef(myPkgPath, pm))
+// PrintType returns type.
+func (t *TypeMap) PrintType(myPkgPath string, pm PackageMap) string {
+	return fmt.Sprintf("map[%s]%s", t.Key.PrintType(myPkgPath, pm), t.Value.PrintType(myPkgPath, pm))
 }
 
 func (t *TypeMap) addImports(pm *PackageMap) {
@@ -144,8 +144,8 @@ func NewTypeNamed(pkg *PkgInfo, typ string) Type {
 	}
 }
 
-// PrintDef returns type defenition.
-func (t *TypeNamed) PrintDef(myPkgPath string, pm PackageMap) string {
+// PrintType returns type.
+func (t *TypeNamed) PrintType(myPkgPath string, pm PackageMap) string {
 	if t.Pkg == nil {
 		return t.Type
 	}
@@ -175,9 +175,9 @@ func NewPointer(typ Type) Type {
 	}
 }
 
-// PrintDef returns type defenition.
-func (t *TypePointer) PrintDef(myPkgPath string, pm PackageMap) string {
-	return "*" + t.Type.PrintDef(myPkgPath, pm)
+// PrintType returns type.
+func (t *TypePointer) PrintType(myPkgPath string, pm PackageMap) string {
+	return "*" + t.Type.PrintType(myPkgPath, pm)
 }
 
 func (t *TypePointer) addImports(pm *PackageMap) {
@@ -200,8 +200,8 @@ func NewTypeSignature(params []*Parameter, variadic *Parameter, results []*Param
 	}
 }
 
-// PrintDef returns type defenition.
-func (t *TypeSignature) PrintDef(myPkgPath string, pm PackageMap) string {
+// PrintType returns type.
+func (t *TypeSignature) PrintType(myPkgPath string, pm PackageMap) string {
 	s := "func"
 	s += t.printArgs(myPkgPath, pm)
 	s += t.printResults(myPkgPath, pm)
@@ -219,7 +219,7 @@ func (t *TypeSignature) printArgs(myPkgPath string, pm PackageMap) string {
 	}
 	s = strings.TrimRight(s, ",")
 	if t.Variadic != nil {
-		s += fmt.Sprintf(",%s ...%s", t.Variadic.Name, t.Variadic.Type.PrintDef(myPkgPath, pm))
+		s += fmt.Sprintf(",%s ...%s", t.Variadic.Name, t.Variadic.Type.PrintType(myPkgPath, pm))
 	}
 	s += ")"
 	return s
@@ -274,8 +274,8 @@ type TypeStruct struct {
 	Fields []*Field
 }
 
-// PrintDef returns type defenition.
-func (t *TypeStruct) PrintDef(myPkgPath string, pm PackageMap) string {
+// PrintType returns type.
+func (t *TypeStruct) PrintType(myPkgPath string, pm PackageMap) string {
 	/*
 		struct{n XX; n XX}
 	*/

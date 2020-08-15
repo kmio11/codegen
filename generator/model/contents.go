@@ -25,7 +25,7 @@ func NewParameter(name string, typ Type) *Parameter {
 // PrintNameAndType print code.
 // x int
 func (p *Parameter) PrintNameAndType(myPkgPath string, pm PackageMap) string {
-	return p.Name + " " + p.Type.PrintDef(myPkgPath, pm)
+	return p.Name + " " + p.Type.PrintType(myPkgPath, pm)
 }
 
 // Contents is contents of source code.
