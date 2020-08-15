@@ -66,7 +66,7 @@ func main() {
 	g.AddContents(file)
 
 	g.PrintHeader(cmdName)
-	g.Printf("// Mock for %s.%s", targetPkg.Path, targetIntf.Name)
+	g.Printf("// Mock for %s.%s", targetPkg.Path, targetIntf.Name())
 	g.NewLine()
 	g.PrintContents()
 	src := g.Format()
@@ -167,18 +167,18 @@ func fmtSignature(org *model.TypeSignature) *model.TypeSignature {
 	var n int
 	for _, p := range org.Args() {
 		methodParams = append(methodParams,
-			model.NewParameter(getMockArgsName(n), p.Type),
+			model.NewParameter(getMockArgsName(n), p.Type()),
 		)
 		n++
 	}
 	var methodVariadic *model.Parameter
 	if org.Variadic() != nil {
-		methodVariadic = model.NewParameter(getMockArgsName(n), org.Variadic().Type)
+		methodVariadic = model.NewParameter(getMockArgsName(n), org.Variadic().Type())
 	}
 	methodResults := []*model.Parameter{}
 	for i, r := range org.Results() {
 		methodResults = append(methodResults,
-			model.NewParameter(getMockResultsName(i), r.Type),
+			model.NewParameter(getMockResultsName(i), r.Type()),
 		)
 	}
 	return model.NewTypeSignature(
@@ -190,7 +190,7 @@ func fmtSignature(org *model.TypeSignature) *model.TypeSignature {
 
 func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.PkgInfo) *model.Struct {
 	//mock struct
-	mockName := "Mock" + targetIntf.Name
+	mockName := "Mock" + targetIntf.Name()
 	mockImpl := model.NewStruct(mockName, outPkg)
 
 	// add interface to mock
@@ -203,29 +203,29 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 					targetPkg.Path,
 					"",
 				),
-				targetIntf.Name,
+				targetIntf.Name(),
 			),
 			"",
 		),
 	)
 
-	for _, intfMethod := range targetIntf.Methods {
+	for _, intfMethod := range targetIntf.Methods() {
 		// Mock's Fields: FakeFunction
-		fakeFuncName := getMockFieldName(intfMethod.Name)
+		fakeFuncName := getMockFieldName(intfMethod.Name())
 		mockImpl.AddField(
 			model.NewField(
 				fakeFuncName,
-				intfMethod.Type,
+				intfMethod.Type(),
 				"",
 			),
 		)
 
 		// Mock's methods
-		methodRcv := *model.NewParameter(
+		methodRcv := model.NewParameter(
 			mockRcvName,
 			model.NewTypeNamed(
 				outPkg,
-				mockImpl.Name,
+				mockImpl.Name(),
 			),
 		)
 
@@ -234,18 +234,18 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 			return FakeXxx(a0, a1, a2)
 		*/
 		var bodyCallFmt string
-		if len(intfMethod.Type.Results()) != 0 {
+		if len(intfMethod.Type().Results()) != 0 {
 			bodyCallFmt += "return "
 		}
-		bodyCallFmt += mockRcvName + "." + fakeFuncName + intfMethod.Type.PrintCallArgsFmt()
+		bodyCallFmt += mockRcvName + "." + fakeFuncName + intfMethod.Type().PrintCallArgsFmt()
 
 		bodyCallArgs := []interface{}{}
 		var n int
-		for range intfMethod.Type.Args() {
+		for range intfMethod.Type().Args() {
 			bodyCallArgs = append(bodyCallArgs, getMockArgsName(n))
 			n++
 		}
-		if intfMethod.Type.Variadic() != nil {
+		if intfMethod.Type().Variadic() != nil {
 			bodyCallArgs = append(bodyCallArgs, getMockArgsName(n)+"...")
 		}
 		methodBody := fmt.Sprintf(bodyCallFmt, bodyCallArgs...)
@@ -254,8 +254,8 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 		mockImpl.AddMethod(
 			model.NewMethod(
 				methodRcv,
-				intfMethod.Name,
-				fmtSignature(intfMethod.Type),
+				intfMethod.Name(),
+				fmtSignature(intfMethod.Type()),
 				methodBody,
 			),
 		)
@@ -264,23 +264,23 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 }
 
 func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.PkgInfo, mockImpl *model.Struct) (stubRoot *model.Struct, stubs []*model.Struct) {
-	stubRootName := "Stub" + targetIntf.Name
+	stubRootName := "Stub" + targetIntf.Name()
 	stubRoot = model.NewStruct(stubRootName, outPkg)
-	stubRootRcv := *model.NewParameter(stubRcvName, stubRoot.Type)
+	stubRootRcv := model.NewParameter(stubRcvName, stubRoot.Type())
 	stubMethods := []*model.Method{}
 
 	mockInitVals := map[string]string{} // for NewMockBody
 
 	stubs = []*model.Struct{}
-	for _, intfMethod := range targetIntf.Methods {
+	for _, intfMethod := range targetIntf.Methods() {
 		// stub for each intf's method.
-		stubName := "Stub" + intfMethod.Name
+		stubName := "Stub" + intfMethod.Name()
 		stub := model.NewStruct(stubName, outPkg)
-		for i, param := range intfMethod.Type.Results() {
+		for i, param := range intfMethod.Type().Results() {
 			stub.AddField(
 				model.NewField(
 					"R"+strconv.Itoa(i),
-					param.Type,
+					param.Type(),
 					"",
 				),
 			)
@@ -288,38 +288,38 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 		stubs = append(stubs, stub)
 
 		// stubRoot's method for each intf's method.
-		stubFiealdName := intfMethod.Name
+		stubFiealdName := intfMethod.Name()
 		stubRoot.AddField(
 			model.NewField(
 				stubFiealdName,
-				stub.Type,
+				stub.Type(),
 				"",
 			),
 		)
 
 		stubMethodBody := "return "
-		for j, r := range stub.Fields {
+		for j, r := range stub.Fields() {
 			if j > 0 {
 				stubMethodBody += ","
 			}
-			stubMethodBody += stubRootRcv.Name + "." + stubFiealdName + "." + r.Name
+			stubMethodBody += stubRootRcv.Name() + "." + stubFiealdName + "." + r.Name()
 		}
-		stubMethodName := getStubMethodName(intfMethod.Name)
+		stubMethodName := getStubMethodName(intfMethod.Name())
 		stubMethods = append(stubMethods,
 			model.NewMethod(
 				stubRootRcv,
 				stubMethodName,
-				fmtSignature(intfMethod.Type),
+				fmtSignature(intfMethod.Type()),
 				stubMethodBody,
 			),
 		)
 
 		// for NewMock
-		mockInitVals[getMockFieldName(intfMethod.Name)] = stubRootRcv.Name + "." + stubMethodName
+		mockInitVals[getMockFieldName(intfMethod.Name())] = stubRootRcv.Name() + "." + stubMethodName
 	}
 
 	// NewMock method
-	newMockBody := "return &" + mockImpl.Name + "{"
+	newMockBody := "return &" + mockImpl.Name() + "{"
 	for k, v := range mockInitVals {
 		newMockBody += k + ":" + v
 		newMockBody += ","
@@ -331,7 +331,7 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 		"NewMock",
 		model.NewTypeSignature(nil, nil,
 			[]*model.Parameter{
-				model.NewParameter("", targetIntf.Type),
+				model.NewParameter("", targetIntf.Type()),
 			},
 		),
 		newMockBody,

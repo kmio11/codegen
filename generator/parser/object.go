@@ -29,7 +29,7 @@ func (p *Parser) parseInterfaceObj(obj types.Object) (*model.Interface, error) {
 		}
 		methods = append(methods,
 			model.NewMethod(
-				*model.NewParameter("", rcv),
+				model.NewParameter("", rcv),
 				method.Obj().Name(),
 				sig,
 				"",

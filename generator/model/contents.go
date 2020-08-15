@@ -6,26 +6,36 @@ import (
 
 // Parameter is an argument or return parameter of a method.
 type Parameter struct {
-	Name string
-	Type Type
+	name string
+	typ  Type
 }
 
 func (p *Parameter) addImports(pm *PackageMap) {
-	p.Type.addImports(pm)
+	p.typ.addImports(pm)
 }
 
 // NewParameter returns Parameter.
 func NewParameter(name string, typ Type) *Parameter {
 	return &Parameter{
-		Name: name,
-		Type: typ,
+		name: name,
+		typ:  typ,
 	}
+}
+
+// Name returns name.
+func (p *Parameter) Name() string {
+	return p.name
+}
+
+// Type returns type.
+func (p *Parameter) Type() Type {
+	return p.typ
 }
 
 // PrintNameAndType print code.
 // x int
 func (p *Parameter) PrintNameAndType(myPkgPath string, pm PackageMap) string {
-	return p.Name + " " + p.Type.PrintType(myPkgPath, pm)
+	return p.name + " " + p.typ.PrintType(myPkgPath, pm)
 }
 
 // Contents is contents of source code.
@@ -36,22 +46,37 @@ type Contents interface {
 
 // Interface is interface.
 type Interface struct {
-	Name    string
-	Type    *TypeNamed
-	Methods []*Method
+	name    string
+	typ     *TypeNamed
+	methods []*Method
 }
 
 // NewInterface returns Interface.
 func NewInterface(name string, pkg *PkgInfo, methods []*Method) *Interface {
 	return &Interface{
-		Name:    name,
-		Type:    NewTypeNamed(pkg, name).(*TypeNamed),
-		Methods: methods,
+		name:    name,
+		typ:     NewTypeNamed(pkg, name).(*TypeNamed),
+		methods: methods,
 	}
 }
 
+// Name returns name.
+func (i *Interface) Name() string {
+	return i.name
+}
+
+// Type returns type.
+func (i *Interface) Type() *TypeNamed {
+	return i.typ
+}
+
+// Methods returns methods.
+func (i Interface) Methods() []*Method {
+	return i.methods
+}
+
 func (i Interface) addImports(pm *PackageMap) {
-	for _, m := range i.Methods {
+	for _, m := range i.methods {
 		m.addImports(pm)
 	}
 }
@@ -63,10 +88,10 @@ func (i *Interface) PrintCode(myPkgPath string, pm PackageMap) string {
 			GetXXX (x int, y int) int
 		}
 	*/
-	str := fmt.Sprintf("type %s interface{", i.Name)
-	for _, m := range i.Methods {
+	str := fmt.Sprintf("type %s interface{", i.name)
+	for _, m := range i.methods {
 		str += "\n"
-		str += fmt.Sprintf("func%s%s%s", m.Name, m.Type.printArgs(myPkgPath, pm), m.Type.printResults(myPkgPath, pm))
+		str += fmt.Sprintf("func%s%s%s", m.name, m.typ.printArgs(myPkgPath, pm), m.typ.printResults(myPkgPath, pm))
 	}
 	str += "\n"
 	str += "}"
@@ -75,28 +100,48 @@ func (i *Interface) PrintCode(myPkgPath string, pm PackageMap) string {
 
 // Struct is struct.
 type Struct struct {
-	Name    string
-	Type    *TypeNamed
-	Methods []*Method
-	Fields  []*Field
+	name    string
+	typ     *TypeNamed
+	methods []*Method
+	fields  []*Field
 }
 
 // NewStruct return Struct
 func NewStruct(name string, pkg *PkgInfo) *Struct {
 	return &Struct{
-		Name:    name,
-		Type:    NewTypeNamed(pkg, name).(*TypeNamed),
-		Methods: []*Method{},
-		Fields:  []*Field{},
+		name:    name,
+		typ:     NewTypeNamed(pkg, name).(*TypeNamed),
+		methods: []*Method{},
+		fields:  []*Field{},
 	}
 }
 
+// Name returns name.
+func (s *Struct) Name() string {
+	return s.name
+}
+
+// Type returns type.
+func (s *Struct) Type() *TypeNamed {
+	return s.typ
+}
+
+// Methods returns methods.
+func (s *Struct) Methods() []*Method {
+	return s.methods
+}
+
+// Fields returns fields.
+func (s *Struct) Fields() []*Field {
+	return s.fields
+}
+
 func (s *Struct) addImports(pm *PackageMap) {
-	s.Type.addImports(pm)
-	for _, m := range s.Methods {
+	s.typ.addImports(pm)
+	for _, m := range s.methods {
 		m.addImports(pm)
 	}
-	for _, m := range s.Fields {
+	for _, m := range s.fields {
 		m.addImports(pm)
 	}
 }
@@ -112,8 +157,8 @@ func (s *Struct) PrintCode(myPkgPath string, pm PackageMap) string {
 			return 1
 		}
 	*/
-	str := fmt.Sprintf("type %s struct{", s.Name)
-	for _, m := range s.Fields {
+	str := fmt.Sprintf("type %s struct{", s.name)
+	for _, m := range s.fields {
 		str += "\n"
 		str += m.PrintDef(myPkgPath, pm)
 	}
@@ -121,7 +166,7 @@ func (s *Struct) PrintCode(myPkgPath string, pm PackageMap) string {
 	str += "}"
 
 	str += "\n"
-	for _, m := range s.Methods {
+	for _, m := range s.methods {
 		str += "\n"
 		str += m.PrintCode(myPkgPath, pm)
 	}
@@ -130,19 +175,19 @@ func (s *Struct) PrintCode(myPkgPath string, pm PackageMap) string {
 
 // AddField add field to struct
 func (s *Struct) AddField(m *Field) {
-	s.Fields = append(s.Fields, m)
+	s.fields = append(s.fields, m)
 }
 
 // AddMethod add method to struct
 func (s *Struct) AddMethod(m *Method) {
-	s.Methods = append(s.Methods, m)
+	s.methods = append(s.methods, m)
 }
 
 // Field is field of struct.
 // If Parameter.Name is brank, it represents embeded field.
 type Field struct {
 	Parameter
-	Tag string
+	tag string
 }
 
 // NewField returns Field
@@ -150,38 +195,48 @@ func NewField(name string, typ Type, tag string) *Field {
 	p := NewParameter(name, typ)
 	return &Field{
 		Parameter: Parameter{
-			Name: p.Name,
-			Type: p.Type,
+			name: p.name,
+			typ:  p.typ,
 		},
-		Tag: tag,
+		tag: tag,
 	}
 }
 
+// Tag returns tag.
+func (f *Field) Tag() string {
+	return f.tag
+}
+
 // PrintDef print name ,type and tag(if exist) .
-func (m *Field) PrintDef(myPkgPath string, pm PackageMap) string {
-	if m.Tag != "" {
-		return fmt.Sprintf("%s `%s`", m.Parameter.PrintNameAndType(myPkgPath, pm), m.Tag)
+func (f *Field) PrintDef(myPkgPath string, pm PackageMap) string {
+	if f.tag != "" {
+		return fmt.Sprintf("%s `%s`", f.Parameter.PrintNameAndType(myPkgPath, pm), f.tag)
 	}
-	return m.Parameter.PrintNameAndType(myPkgPath, pm)
+	return f.Parameter.PrintNameAndType(myPkgPath, pm)
 }
 
 // Method is method.
 type Method struct {
-	Reciever Parameter
+	rcv *Parameter
 	Func
 }
 
 // NewMethod returns Method.
-func NewMethod(rcv Parameter, name string, typ *TypeSignature, statements string) *Method {
+func NewMethod(rcv *Parameter, name string, typ *TypeSignature, statements string) *Method {
 	f := NewFunc(name, typ, statements)
 	return &Method{
-		Reciever: rcv,
+		rcv: rcv,
 		Func: Func{
-			Name:       f.Name,
-			Type:       f.Type,
-			Statements: f.Statements,
+			name:       f.name,
+			typ:        f.typ,
+			statements: f.statements,
 		},
 	}
+}
+
+// Reciever returns reciever.
+func (m *Method) Reciever() *Parameter {
+	return m.rcv
 }
 
 // PrintCode print code.
@@ -192,13 +247,13 @@ func (m *Method) PrintCode(myPkgPath string, pm PackageMap) string {
 		}
 	*/
 	s := "func "
-	s += fmt.Sprintf("(%s)", m.Reciever.PrintNameAndType(myPkgPath, pm))
-	s += m.Name
-	s += m.Type.printArgs(myPkgPath, pm)
-	s += m.Type.printResults(myPkgPath, pm)
+	s += fmt.Sprintf("(%s)", m.rcv.PrintNameAndType(myPkgPath, pm))
+	s += m.name
+	s += m.typ.printArgs(myPkgPath, pm)
+	s += m.typ.printResults(myPkgPath, pm)
 	s += "{\n"
 
-	s += m.Statements
+	s += m.statements
 	s += "\n"
 
 	s += "}\n"
@@ -207,18 +262,33 @@ func (m *Method) PrintCode(myPkgPath string, pm PackageMap) string {
 
 // Func is func.
 type Func struct {
-	Name       string
-	Type       *TypeSignature
-	Statements string
+	name       string
+	typ        *TypeSignature
+	statements string
 }
 
 // NewFunc returns Func.
 func NewFunc(name string, typ *TypeSignature, statements string) *Func {
 	return &Func{
-		Name:       name,
-		Type:       typ,
-		Statements: statements,
+		name:       name,
+		typ:        typ,
+		statements: statements,
 	}
+}
+
+// Name returns name.
+func (f *Func) Name() string {
+	return f.name
+}
+
+// Type returns type.
+func (f *Func) Type() *TypeSignature {
+	return f.typ
+}
+
+// Statements returns statements.
+func (f *Func) Statements() string {
+	return f.statements
 }
 
 // PrintDef print Name and Params and Results
@@ -226,7 +296,7 @@ func (f *Func) PrintDef(myPkgPath string, pm PackageMap) string {
 	/*
 		Func(x int) int
 	*/
-	return f.Name + f.Type.printArgs(myPkgPath, pm) + f.Type.printResults(myPkgPath, pm)
+	return f.name + f.typ.printArgs(myPkgPath, pm) + f.typ.printResults(myPkgPath, pm)
 }
 
 // PrintCode print code.
@@ -237,12 +307,12 @@ func (f *Func) PrintCode(myPkgPath string, pm PackageMap) string {
 		}
 	*/
 	s := "func "
-	s += f.Name
-	s += f.Type.printArgs(myPkgPath, pm)
-	s += f.Type.printResults(myPkgPath, pm)
+	s += f.name
+	s += f.typ.printArgs(myPkgPath, pm)
+	s += f.typ.printResults(myPkgPath, pm)
 	s += "{\n"
 
-	s += f.Statements
+	s += f.statements
 	s += "\n"
 
 	s += "}\n"
@@ -250,10 +320,10 @@ func (f *Func) PrintCode(myPkgPath string, pm PackageMap) string {
 }
 
 func (f *Func) addImports(pm *PackageMap) {
-	f.Type.addImports(pm)
+	f.typ.addImports(pm)
 }
 
 // SetStatements set statements.
 func (f *Func) SetStatements(statements string) {
-	f.Statements = statements
+	f.statements = statements
 }

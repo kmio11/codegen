@@ -328,7 +328,7 @@ func (t *TypeSignature) printArgs(myPkgPath string, pm PackageMap) string {
 	}
 	s = strings.TrimRight(s, ",")
 	if t.variadic != nil {
-		s += fmt.Sprintf(",%s ...%s", t.variadic.Name, t.variadic.Type.PrintType(myPkgPath, pm))
+		s += fmt.Sprintf(",%s ...%s", t.variadic.Name(), t.variadic.Type().PrintType(myPkgPath, pm))
 	}
 	s += ")"
 	return s

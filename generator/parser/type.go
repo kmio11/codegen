@@ -145,13 +145,13 @@ func (p *Parser) parseSignature(t *types.Signature) (model.Type, error) {
 		// *types.Signature must have at least one parameter,
 		// and the last parameter must be of unnamed slice type.
 		lastParam := params[len(params)-1]
-		slice, ok := lastParam.Type.(*model.TypeArray)
+		slice, ok := lastParam.Type().(*model.TypeArray)
 		if !ok {
-			err = fmt.Errorf("internal error. %s is %T", lastParam.Name, lastParam.Type)
+			err = fmt.Errorf("internal error. %s is %T", lastParam.Name(), lastParam.Type())
 			p.log.Println(err)
 			return nil, err
 		}
-		variadic = model.NewParameter(lastParam.Name, slice.Type())
+		variadic = model.NewParameter(lastParam.Name(), slice.Type())
 		params = params[:len(params)-1]
 	}
 
