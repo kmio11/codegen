@@ -28,16 +28,13 @@ func (p *Parser) parseInterfaceObj(obj types.Object) (*model.Interface, error) {
 			return nil, err
 		}
 		methods = append(methods,
-			&model.Method{
-				Func: model.Func{
-					Name: method.Obj().Name(),
-					Type: sig,
-				},
-				Reciever: model.Parameter{
-					Name: "",
-					Type: rcv,
-				},
-			})
+			model.NewMethod(
+				*model.NewParameter("", rcv),
+				method.Obj().Name(),
+				sig,
+				"",
+			),
+		)
 	}
 
 	intf := model.NewInterface(

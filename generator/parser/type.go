@@ -47,10 +47,7 @@ func (p *Parser) parseArray(t *types.Array) (model.Type, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.TypeArray{
-		Len:  t.Len(),
-		Type: tt,
-	}, nil
+	return model.NewTypeArray(t.Len(), tt), nil
 }
 
 func (p *Parser) parseSlice(t *types.Slice) (model.Type, error) {
@@ -58,15 +55,11 @@ func (p *Parser) parseSlice(t *types.Slice) (model.Type, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.TypeArray{
-		Len:  -1,
-		Type: tt,
-	}, nil
+	return model.NewTypeArray(-1, tt), nil
 }
 
 func (*Parser) parseBasic(t *types.Basic) (model.Type, error) {
-	b := model.TypeBasic(t.Name())
-	return &b, nil
+	return model.NewTypeBasic(t.Name()), nil
 }
 
 func (p *Parser) parseChan(t *types.Chan) (model.Type, error) {
@@ -85,10 +78,7 @@ func (p *Parser) parseChan(t *types.Chan) (model.Type, error) {
 		dir = model.RecvOnly
 	}
 
-	return &model.TypeChan{
-		Dir:  dir,
-		Type: tt,
-	}, nil
+	return model.NewTypeChan(dir, tt), nil
 }
 
 func (p *Parser) parseInterfaceTmp(t *types.Interface) (model.Type, error) {
@@ -112,10 +102,7 @@ func (p *Parser) parseInterfaceTmp(t *types.Interface) (model.Type, error) {
 		emethods = append(emethods, emethod)
 	}
 
-	return &model.TypeInterface{
-		Embeddeds:       embeddeds,
-		ExplicitMethods: emethods,
-	}, nil
+	return model.NewTypeInterface(embeddeds, emethods), nil
 }
 
 func (p *Parser) parseMap(t *types.Map) (model.Type, error) {
@@ -127,10 +114,7 @@ func (p *Parser) parseMap(t *types.Map) (model.Type, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.TypeMap{
-		Key:   k,
-		Value: v,
-	}, nil
+	return model.NewTypeMap(k, v), nil
 }
 
 func (*Parser) parseNamedType(t *types.Named) (model.Type, error) {
@@ -151,7 +135,7 @@ func (p *Parser) parsePointer(t *types.Pointer) (model.Type, error) {
 }
 
 func (p *Parser) parseSignature(t *types.Signature) (model.Type, error) {
-	params, err := p.getParameter(t.Params())
+	params, err := p.parseParameter(t.Params())
 	if err != nil {
 		return nil, err
 	}
@@ -167,23 +151,16 @@ func (p *Parser) parseSignature(t *types.Signature) (model.Type, error) {
 			p.log.Println(err)
 			return nil, err
 		}
-		variadic = &model.Parameter{
-			Name: lastParam.Name,
-			Type: slice.Type,
-		}
+		variadic = model.NewParameter(lastParam.Name, slice.Type())
 		params = params[:len(params)-1]
 	}
 
-	results, err := p.getParameter(t.Results())
+	results, err := p.parseParameter(t.Results())
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.TypeSignature{
-		Params:   params,
-		Variadic: variadic,
-		Results:  results,
-	}, nil
+	return model.NewTypeSignature(params, variadic, results), nil
 }
 
 func (p *Parser) parseStruct(t *types.Struct) (model.Type, error) {
@@ -201,23 +178,18 @@ func (p *Parser) parseStruct(t *types.Struct) (model.Type, error) {
 		fields = append(fields, model.NewField(name, typ, t.Tag(i)))
 	}
 
-	return &model.TypeStruct{
-		Fields: fields,
-	}, nil
+	return model.NewTypeStruct(fields), nil
 }
 
-func (p *Parser) getParameter(t *types.Tuple) ([]*model.Parameter, error) {
+func (p *Parser) parseParameter(t *types.Tuple) ([]*model.Parameter, error) {
 	params := []*model.Parameter{}
 	for i := 0; i < t.Len(); i++ {
 		v := t.At(i)
-		vv, err := p.parseType(v.Type())
+		typ, err := p.parseType(v.Type())
 		if err != nil {
 			return nil, err
 		}
-		params = append(params, &model.Parameter{
-			Name: v.Name(),
-			Type: vv,
-		})
+		params = append(params, model.NewParameter(v.Name(), typ))
 	}
 	return params, nil
 }

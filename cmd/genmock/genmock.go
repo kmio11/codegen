@@ -165,18 +165,18 @@ func getStubMethodName(intfMethodName string) string {
 func fmtSignature(org *model.TypeSignature) *model.TypeSignature {
 	methodParams := []*model.Parameter{}
 	var n int
-	for _, p := range org.Params {
+	for _, p := range org.Args() {
 		methodParams = append(methodParams,
 			model.NewParameter(getMockArgsName(n), p.Type),
 		)
 		n++
 	}
 	var methodVariadic *model.Parameter
-	if org.Variadic != nil {
-		methodVariadic = model.NewParameter(getMockArgsName(n), org.Variadic.Type)
+	if org.Variadic() != nil {
+		methodVariadic = model.NewParameter(getMockArgsName(n), org.Variadic().Type)
 	}
 	methodResults := []*model.Parameter{}
-	for i, r := range org.Results {
+	for i, r := range org.Results() {
 		methodResults = append(methodResults,
 			model.NewParameter(getMockResultsName(i), r.Type),
 		)
@@ -234,18 +234,18 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 			return FakeXxx(a0, a1, a2)
 		*/
 		var bodyCallFmt string
-		if len(intfMethod.Type.Results) != 0 {
+		if len(intfMethod.Type.Results()) != 0 {
 			bodyCallFmt += "return "
 		}
 		bodyCallFmt += mockRcvName + "." + fakeFuncName + intfMethod.Type.PrintCallArgsFmt()
 
 		bodyCallArgs := []interface{}{}
 		var n int
-		for range intfMethod.Type.Params {
+		for range intfMethod.Type.Args() {
 			bodyCallArgs = append(bodyCallArgs, getMockArgsName(n))
 			n++
 		}
-		if intfMethod.Type.Variadic != nil {
+		if intfMethod.Type.Variadic() != nil {
 			bodyCallArgs = append(bodyCallArgs, getMockArgsName(n)+"...")
 		}
 		methodBody := fmt.Sprintf(bodyCallFmt, bodyCallArgs...)
@@ -276,7 +276,7 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 		// stub for each intf's method.
 		stubName := "Stub" + intfMethod.Name
 		stub := model.NewStruct(stubName, outPkg)
-		for i, param := range intfMethod.Type.Results {
+		for i, param := range intfMethod.Type.Results() {
 			stub.AddField(
 				model.NewField(
 					"R"+strconv.Itoa(i),
