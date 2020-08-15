@@ -63,13 +63,12 @@ func main() {
 
 	// generate
 	g := &generator.Generator{}
-	g.AddContents(file)
-
-	g.PrintHeader(cmdName)
-	g.Printf("// Mock for %s.%s", targetPkg.Path, targetIntf.Name())
-	g.NewLine()
-	g.PrintContents()
-	src := g.Format()
+	src := g.
+		PrintHeader(cmdName).
+		Printf("// Mock for %s.%s", targetPkg.Path, targetIntf.Name()).
+		NewLine().
+		AddContents(file).PrintContents().
+		Format()
 
 	// output
 	if len(*flagOut) == 0 {
