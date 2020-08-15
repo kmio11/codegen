@@ -56,7 +56,7 @@ type Interface struct {
 func NewInterface(name string, pkg *PkgInfo, methods []*Method) *Interface {
 	return &Interface{
 		name:    name,
-		typ:     NewTypeNamed(pkg, name, nil).(*TypeNamed),
+		typ:     NewTypeNamed(pkg, name, nil),
 		methods: methods,
 	}
 }
@@ -111,7 +111,7 @@ type Struct struct {
 func NewStruct(name string, pkg *PkgInfo) *Struct {
 	return &Struct{
 		name:    name,
-		typ:     NewTypeNamed(pkg, name, nil).(*TypeNamed), //TODO: typenamed
+		typ:     NewTypeNamed(pkg, name, nil), //TODO: typenamed
 		methods: []*Method{},
 		fields:  []*Field{},
 	}

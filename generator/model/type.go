@@ -216,7 +216,7 @@ type TypeNamed struct {
 }
 
 // NewTypeNamed returns TypeNamed.
-func NewTypeNamed(pkg *PkgInfo, name string, org Type) Type {
+func NewTypeNamed(pkg *PkgInfo, name string, org Type) *TypeNamed {
 	return &TypeNamed{
 		pkg:  pkg,
 		name: name,
