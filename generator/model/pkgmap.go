@@ -20,77 +20,99 @@ const (
 
 // PkgInfo is package infomation.
 type PkgInfo struct {
-	Name  string
-	Path  string
-	Alias string
+	name  string
+	path  string
+	alias string
 }
 
 // NewPkgInfo returns ImportedPackage
 func NewPkgInfo(name, path, alias string) *PkgInfo {
 	return &PkgInfo{
-		Name:  name,
-		Path:  path,
-		Alias: alias,
+		name:  name,
+		path:  path,
+		alias: alias,
 	}
+}
+
+// Name returns package name.
+func (pi *PkgInfo) Name() string {
+	return pi.name
+}
+
+// Path returns package path.
+func (pi *PkgInfo) Path() string {
+	return pi.path
+}
+
+// Alias returns package alias.
+func (pi *PkgInfo) Alias() string {
+	return pi.alias
 }
 
 // PrintCode returns import declaration.
-func (i *PkgInfo) PrintCode() string {
-	if i.Alias != "" {
-		return fmt.Sprintf(`%s "%s"`, i.Alias, i.Path)
+func (pi *PkgInfo) PrintCode() string {
+	if pi.alias != "" {
+		return fmt.Sprintf(`%s "%s"`, pi.alias, pi.path)
 	}
-	return fmt.Sprintf(`"%s"`, i.Path)
+	return fmt.Sprintf(`"%s"`, pi.path)
 }
 
 // Prefix returns prefix to use types in myPkg.
-func (i *PkgInfo) Prefix(myPkg string) string {
-	if myPkg == i.Path {
+func (pi *PkgInfo) Prefix(myPkg string) string {
+	if myPkg == pi.path {
 		return ""
 	}
 
-	if i.Alias == dotImport {
+	if pi.alias == dotImport {
 		return ""
 	}
-	if i.Alias != "" {
-		return i.Alias + "."
+	if pi.alias != "" {
+		return pi.alias + "."
 	}
-	return i.Name + "."
+	return pi.name + "."
 }
 
 // PackageMap is packages.
 type PackageMap struct {
-	list     map[string]PkgInfo
-	isImport map[string]bool
+	pkgs    map[string]PkgInfo
+	imports map[string]bool
 }
 
 // NewPackageMap returns PackageMap
 func NewPackageMap(myPkgName, myPkgPath string) *PackageMap {
 	p := &PackageMap{
-		list:     map[string]PkgInfo{},
-		isImport: map[string]bool{},
+		pkgs:    map[string]PkgInfo{},
+		imports: map[string]bool{},
 	}
 	p.Add(myPkgPath, *NewPkgInfo(myPkgName, myPkgPath, ""))
 	return p
 }
 
-// Copy copy PackageMap to dst.
-func (pm *PackageMap) Copy(dst *PackageMap) {
-	dst.list = map[string]PkgInfo{}
-	dst.isImport = map[string]bool{}
+// PrintCode print code.
+func (pm *PackageMap) PrintCode(myPkgPath string) string {
+	str := ""
 
-	for k, v := range pm.list {
-		dst.list[k] = v
+	paths := pm.requireImport(myPkgPath)
+	if len(paths) == 0 {
+		return str
 	}
-	for k, v := range pm.isImport {
-		dst.isImport[k] = v
+
+	str = "import ("
+	for _, path := range paths {
+		pkg := pm.pkgs[path]
+		str += "\n"
+		str += pkg.PrintCode()
 	}
+	str += "\n"
+	str += ")"
+	return str
 }
 
 // MarshalJSON is marshal json
 func (pm *PackageMap) MarshalJSON() ([]byte, error) {
 	// sort by pkgpath
 	paths := []string{}
-	for k := range pm.list {
+	for k := range pm.pkgs {
 		paths = append(paths, k)
 	}
 
@@ -104,26 +126,39 @@ func (pm *PackageMap) MarshalJSON() ([]byte, error) {
 	for _, path := range paths {
 		outs = append(outs, out{
 			Path:       path,
-			Name:       pm.list[path].Name,
-			Alias:      pm.list[path].Alias,
-			IsImported: pm.isImport[path],
+			Name:       pm.pkgs[path].name,
+			Alias:      pm.pkgs[path].alias,
+			IsImported: pm.imports[path],
 		})
 	}
 	return json.Marshal(outs)
 }
 
-// CleanDependencies set all packages as  isImported=false.
-func (pm *PackageMap) CleanDependencies() {
-	for k := range pm.isImport {
-		pm.isImport[k] = false
+// Copy copy PackageMap to dst.
+func (pm *PackageMap) Copy(dst *PackageMap) {
+	dst.pkgs = map[string]PkgInfo{}
+	dst.imports = map[string]bool{}
+
+	for k, v := range pm.pkgs {
+		dst.pkgs[k] = v
+	}
+	for k, v := range pm.imports {
+		dst.imports[k] = v
 	}
 }
 
-// needToImport returns package paths need to import.
-func (pm *PackageMap) needToImport(myPkgPath string) []string {
+// CleanDependencies set all packages to not require import.
+func (pm *PackageMap) CleanDependencies() {
+	for k := range pm.imports {
+		pm.imports[k] = false
+	}
+}
+
+// requireImport returns package paths myPkgPath need to import.
+func (pm *PackageMap) requireImport(myPkgPath string) []string {
 	paths := []string{}
-	for path, need := range pm.isImport {
-		if myPkgPath == path || !need {
+	for path, require := range pm.imports {
+		if myPkgPath == path || !require {
 			continue
 		}
 		paths = append(paths, path)
@@ -131,26 +166,6 @@ func (pm *PackageMap) needToImport(myPkgPath string) []string {
 
 	sort.Strings(paths)
 	return paths
-}
-
-// PrintCode print code.
-func (pm *PackageMap) PrintCode(myPkgPath string) string {
-	str := ""
-
-	paths := pm.needToImport(myPkgPath)
-	if len(paths) == 0 {
-		return str
-	}
-
-	str = "import ("
-	for _, path := range paths {
-		pkg := pm.list[path]
-		str += "\n"
-		str += pkg.PrintCode()
-	}
-	str += "\n"
-	str += ")"
-	return str
 }
 
 // ResolveNameConflict set alias to packages which need to imported  if name is duplicated.
@@ -164,18 +179,18 @@ func (pm *PackageMap) ResolveNameConflict(myPkgPath string) {
 		return false
 	}
 
-	paths := pm.needToImport(myPkgPath)
+	paths := pm.requireImport(myPkgPath)
 	used := make([]string, len(paths))
 	for n, path := range paths {
 		var imName string
-		pkginfo := pm.list[path]
-		if pkginfo.Alias == dotImport || pkginfo.Alias == brankImport {
+		pkginfo := pm.pkgs[path]
+		if pkginfo.alias == dotImport || pkginfo.alias == brankImport {
 			continue
 		}
-		if pkginfo.Alias != "" {
-			imName = pkginfo.Alias
+		if pkginfo.alias != "" {
+			imName = pkginfo.alias
 		} else {
-			imName = pkginfo.Name
+			imName = pkginfo.name
 		}
 
 		var isAliasUpdate bool
@@ -190,29 +205,29 @@ func (pm *PackageMap) ResolveNameConflict(myPkgPath string) {
 		}
 		used[n] = imName
 		if isAliasUpdate {
-			pkginfo.Alias = imName
-			pm.list[path] = pkginfo
+			pkginfo.alias = imName
+			pm.pkgs[path] = pkginfo
 		}
 	}
 }
 
-// Need set package as isImported=need
-func (pm *PackageMap) Need(path string, need bool) {
-	pm.isImport[path] = need
+// SetRequired set package as isImported=need
+func (pm *PackageMap) SetRequired(path string, isRequred bool) {
+	pm.imports[path] = isRequred
 }
 
 // Get returns ImportedPackage
 func (pm *PackageMap) Get(path string) *PkgInfo {
 	// return pm.list[path]
-	v, ok := pm.list[path]
+	v, ok := pm.pkgs[path]
 	if !ok {
 		return nil
 	}
 	return &v
 }
 
-// Add add Package to map.
+// Add add package, and set it to requred to import.
 func (pm *PackageMap) Add(path string, pkg PkgInfo) {
-	pm.list[path] = pkg
-	pm.isImport[path] = true
+	pm.pkgs[path] = pkg
+	pm.imports[path] = true
 }

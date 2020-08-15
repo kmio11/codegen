@@ -41,7 +41,7 @@ func (f *File) DependenciesTidy() *PackageMap {
 		c.addImports(f.dependencies)
 	}
 
-	f.dependencies.ResolveNameConflict(f.pkg.Path)
+	f.dependencies.ResolveNameConflict(f.pkg.Path())
 	return f.dependencies
 }
 
@@ -53,13 +53,13 @@ func (f *File) Contents() []Contents {
 // Print returns code.
 func (f *File) Print() string {
 	var s string
-	s += fmt.Sprintf("package %s", f.pkg.Name)
+	s += fmt.Sprintf("package %s", f.pkg.Name())
 	s += "\n"
-	s += f.dependencies.PrintCode(f.pkg.Path)
+	s += f.dependencies.PrintCode(f.pkg.Path())
 
 	for _, c := range f.contents {
 		s += "\n"
-		s += c.PrintCode(f.pkg.Path, *f.dependencies)
+		s += c.PrintCode(f.pkg.Path(), *f.dependencies)
 	}
 
 	return s

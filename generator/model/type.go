@@ -237,7 +237,7 @@ func (t *TypeNamed) PrintType(myPkgPath string, pm PackageMap) string {
 	if t.pkg == nil {
 		return t.name
 	}
-	pkg := pm.Get(t.pkg.Path)
+	pkg := pm.Get(t.pkg.Path())
 	if pkg == nil {
 		// TODO: is internal error?
 		pkg = t.pkg
@@ -247,7 +247,7 @@ func (t *TypeNamed) PrintType(myPkgPath string, pm PackageMap) string {
 
 func (t *TypeNamed) addImports(pm *PackageMap) {
 	if t.pkg != nil {
-		pm.Need(t.pkg.Path, true)
+		pm.SetRequired(t.pkg.Path(), true)
 	}
 }
 
