@@ -52,19 +52,3 @@ func (*Parser) getMethodSet(obj types.Object, pointer bool) (*types.MethodSet, e
 	}
 	return types.NewMethodSet(t), nil
 }
-
-func (p *Parser) parseFunc(t *types.Func) (*model.Func, error) {
-	sig, _ := t.Type().(*types.Signature) // *types.Func's Type() is always a *Signature
-	typ, err := p.parseSignature(sig)
-	if err != nil {
-		return nil, err
-	}
-	typf, ok := typ.(*model.TypeSignature)
-	if !ok {
-		err = fmt.Errorf("internal error. not TypeSignature: <%s>'s type is <%T> ", t.String(), typf)
-		p.log.Println(err)
-		return nil, err
-	}
-
-	return model.NewFunc(t.Name(), typf, ""), nil
-}

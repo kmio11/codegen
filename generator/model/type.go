@@ -212,13 +212,15 @@ func (t *TypeMap) addImports(pm *PackageMap) {
 type TypeNamed struct {
 	pkg  *PkgInfo
 	name string
+	org  Type
 }
 
 // NewTypeNamed returns TypeNamed.
-func NewTypeNamed(pkg *PkgInfo, name string) Type {
+func NewTypeNamed(pkg *PkgInfo, name string, org Type) Type {
 	return &TypeNamed{
 		pkg:  pkg,
 		name: name,
+		org:  org,
 	}
 }
 

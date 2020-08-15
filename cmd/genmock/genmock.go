@@ -203,6 +203,7 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 					"",
 				),
 				targetIntf.Name(),
+				targetIntf.Type(),
 			),
 			"",
 		),
@@ -225,6 +226,7 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 			model.NewTypeNamed(
 				outPkg,
 				mockImpl.Name(),
+				mockImpl.Type(),
 			),
 		)
 

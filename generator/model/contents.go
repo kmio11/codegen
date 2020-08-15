@@ -52,10 +52,11 @@ type Interface struct {
 }
 
 // NewInterface returns Interface.
+//TODO: typenamed
 func NewInterface(name string, pkg *PkgInfo, methods []*Method) *Interface {
 	return &Interface{
 		name:    name,
-		typ:     NewTypeNamed(pkg, name).(*TypeNamed),
+		typ:     NewTypeNamed(pkg, name, nil).(*TypeNamed),
 		methods: methods,
 	}
 }
@@ -110,7 +111,7 @@ type Struct struct {
 func NewStruct(name string, pkg *PkgInfo) *Struct {
 	return &Struct{
 		name:    name,
-		typ:     NewTypeNamed(pkg, name).(*TypeNamed),
+		typ:     NewTypeNamed(pkg, name, nil).(*TypeNamed), //TODO: typenamed
 		methods: []*Method{},
 		fields:  []*Field{},
 	}

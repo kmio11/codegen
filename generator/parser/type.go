@@ -8,30 +8,125 @@ import (
 )
 
 func (p *Parser) parseType(t types.Type) (model.Type, error) {
+	tp := p.newTypeParser()
+	return tp.parseType(t)
+}
+
+type typeParser struct {
+	p      *Parser
+	parsed map[parsedKey]model.Type  // for cycle detection
+	stats  map[parsedKey]parseStatus // for cycle detection
+}
+
+func (p *Parser) newTypeParser() *typeParser {
+	return &typeParser{
+		p:      p,
+		parsed: map[parsedKey]model.Type{},
+		stats:  map[parsedKey]parseStatus{},
+	}
+}
+
+type parsedKey string
+
+func (tp *typeParser) getParsedKey(t types.Type) parsedKey {
+	var key string
+	switch tt := t.(type) {
+	case *types.Named:
+		var path string
+		if tt.Obj().Pkg() != nil {
+			path = tt.Obj().Pkg().Path()
+		}
+		key = path + "::" + tt.Obj().Name()
+	}
+
+	return parsedKey(key)
+}
+
+type parseStatus int
+
+const (
+	pstatUnknown parseStatus = iota
+	pstatMarked              // you should parse
+	pstatParsing             // the othrer is now parsing
+	pstatParsed              // already parsed
+)
+
+// wasParsed returns already parsed type.
+// if nil, specified type was not parsed.
+func (tp *typeParser) wasParsed(t types.Type) (addr model.Type, stat parseStatus, add func(model.Type) model.Type) {
+	key := tp.getParsedKey(t)
+	stat = pstatUnknown
+
+	add = func(m model.Type) model.Type {
+		ret := m
+		if stat == pstatMarked {
+			switch mm := m.(type) {
+			case *model.TypeNamed:
+				p, ok := tp.parsed[key].(*model.TypeNamed)
+				if !ok {
+					panic("type must be *model.TypeNamed")
+				}
+				*p = *mm
+				ret = p
+			default:
+				msg := fmt.Sprintf("unexpected type. %T", m)
+				panic(msg)
+			}
+			tp.stats[key] = pstatParsed
+		}
+		return ret
+	}
+
+	switch t.(type) {
+	case *types.Named:
+		stat = tp.stats[key]
+		if stat == pstatUnknown {
+			stat = pstatMarked
+			tp.parsed[key] = model.NewTypeNamed(nil, "memory allocation", nil)
+		}
+	}
+
+	if stat == pstatMarked {
+		tp.stats[key] = pstatParsing
+	}
+
+	if stat >= pstatParsing {
+		addr = tp.parsed[key]
+	}
+
+	return addr, stat, add
+}
+
+func (tp *typeParser) parseType(t types.Type) (model.Type, error) {
 	var m model.Type
 	var err error
 
+	m, stat, end := tp.wasParsed(t)
+	if stat >= pstatParsing {
+		return m, nil
+	}
+
 	switch tt := t.(type) {
 	case *types.Array:
-		m, err = p.parseArray(tt)
+		m, err = tp.parseArray(tt)
 	case *types.Slice:
-		m, err = p.parseSlice(tt)
+		m, err = tp.parseSlice(tt)
 	case *types.Basic:
-		m, err = p.parseBasic(tt)
+		m, err = tp.parseBasic(tt)
 	case *types.Chan:
-		m, err = p.parseChan(tt)
+		m, err = tp.parseChan(tt)
 	case *types.Interface:
-		m, err = p.parseInterfaceTmp(tt)
+		m, err = tp.parseInterface(tt)
 	case *types.Map:
-		m, err = p.parseMap(tt)
+		m, err = tp.parseMap(tt)
 	case *types.Named:
-		m, err = p.parseNamedType(tt)
+		m, err = tp.parseNamedType(tt)
 	case *types.Pointer:
-		m, err = p.parsePointer(tt)
+		m, err = tp.parsePointer(tt)
 	case *types.Signature:
-		m, err = p.parseSignature(tt)
+		m, err = tp.parseSignature(tt)
 	case *types.Struct:
-		m, err = p.parseStruct(tt)
+		m, err = tp.parseStruct(tt)
 	default:
 		err = fmt.Errorf("unexpected type: %s", tt.String())
 	}
@@ -39,31 +134,32 @@ func (p *Parser) parseType(t types.Type) (model.Type, error) {
 	if err != nil {
 		return nil, err
 	}
+	m = end(m)
 	return m, nil
 }
 
-func (p *Parser) parseArray(t *types.Array) (model.Type, error) {
-	tt, err := p.parseType(t.Elem())
+func (tp *typeParser) parseArray(t *types.Array) (model.Type, error) {
+	tt, err := tp.parseType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
 	return model.NewTypeArray(t.Len(), tt), nil
 }
 
-func (p *Parser) parseSlice(t *types.Slice) (model.Type, error) {
-	tt, err := p.parseType(t.Elem())
+func (tp *typeParser) parseSlice(t *types.Slice) (model.Type, error) {
+	tt, err := tp.parseType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
 	return model.NewTypeArray(-1, tt), nil
 }
 
-func (*Parser) parseBasic(t *types.Basic) (model.Type, error) {
+func (tp *typeParser) parseBasic(t *types.Basic) (model.Type, error) {
 	return model.NewTypeBasic(t.Name()), nil
 }
 
-func (p *Parser) parseChan(t *types.Chan) (model.Type, error) {
-	tt, err := p.parseType(t.Elem())
+func (tp *typeParser) parseChan(t *types.Chan) (model.Type, error) {
+	tt, err := tp.parseType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
@@ -81,10 +177,10 @@ func (p *Parser) parseChan(t *types.Chan) (model.Type, error) {
 	return model.NewTypeChan(dir, tt), nil
 }
 
-func (p *Parser) parseInterfaceTmp(t *types.Interface) (model.Type, error) {
+func (tp *typeParser) parseInterface(t *types.Interface) (model.Type, error) {
 	embeddeds := []model.Type{}
 	for i := 0; i < t.NumEmbeddeds(); i++ {
-		embedded, err := p.parseType(t.EmbeddedType(i))
+		embedded, err := tp.parseType(t.EmbeddedType(i))
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +190,7 @@ func (p *Parser) parseInterfaceTmp(t *types.Interface) (model.Type, error) {
 	emethods := []*model.Func{}
 	for i := 0; i < t.NumExplicitMethods(); i++ {
 		tf := t.ExplicitMethod(i)
-		emethod, err := p.parseFunc(tf)
+		emethod, err := tp.parseFunc(tf)
 		if err != nil {
 			return nil, err
 		}
@@ -105,37 +201,40 @@ func (p *Parser) parseInterfaceTmp(t *types.Interface) (model.Type, error) {
 	return model.NewTypeInterface(embeddeds, emethods), nil
 }
 
-func (p *Parser) parseMap(t *types.Map) (model.Type, error) {
-	k, err := p.parseType(t.Key())
+func (tp *typeParser) parseMap(t *types.Map) (model.Type, error) {
+	k, err := tp.parseType(t.Key())
 	if err != nil {
 		return nil, err
 	}
-	v, err := p.parseType(t.Elem())
+	v, err := tp.parseType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
 	return model.NewTypeMap(k, v), nil
 }
 
-func (*Parser) parseNamedType(t *types.Named) (model.Type, error) {
+func (tp *typeParser) parseNamedType(t *types.Named) (model.Type, error) {
 	var pkg *model.PkgInfo
 	if t.Obj().Pkg() != nil {
 		pkg = model.NewPkgInfo(t.Obj().Pkg().Name(), t.Obj().Pkg().Path(), "")
 	}
-
-	return model.NewTypeNamed(pkg, t.Obj().Name()), nil
+	org, err := tp.parseType(t.Obj().Type().Underlying())
+	if err != nil {
+		return nil, err
+	}
+	return model.NewTypeNamed(pkg, t.Obj().Name(), org), nil
 }
 
-func (p *Parser) parsePointer(t *types.Pointer) (model.Type, error) {
-	tt, err := p.parseType(t.Elem())
+func (tp *typeParser) parsePointer(t *types.Pointer) (model.Type, error) {
+	tt, err := tp.parseType(t.Elem())
 	if err != nil {
 		return nil, err
 	}
 	return model.NewPointer(tt), nil
 }
 
-func (p *Parser) parseSignature(t *types.Signature) (model.Type, error) {
-	params, err := p.parseParameter(t.Params())
+func (tp *typeParser) parseSignature(t *types.Signature) (model.Type, error) {
+	params, err := tp.parseParameter(t.Params())
 	if err != nil {
 		return nil, err
 	}
@@ -148,14 +247,14 @@ func (p *Parser) parseSignature(t *types.Signature) (model.Type, error) {
 		slice, ok := lastParam.Type().(*model.TypeArray)
 		if !ok {
 			err = fmt.Errorf("internal error. %s is %T", lastParam.Name(), lastParam.Type())
-			p.log.Println(err)
+			tp.p.log.Println(err)
 			return nil, err
 		}
 		variadic = model.NewParameter(lastParam.Name(), slice.Type())
 		params = params[:len(params)-1]
 	}
 
-	results, err := p.parseParameter(t.Results())
+	results, err := tp.parseParameter(t.Results())
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +262,7 @@ func (p *Parser) parseSignature(t *types.Signature) (model.Type, error) {
 	return model.NewTypeSignature(params, variadic, results), nil
 }
 
-func (p *Parser) parseStruct(t *types.Struct) (model.Type, error) {
+func (tp *typeParser) parseStruct(t *types.Struct) (model.Type, error) {
 	fields := []*model.Field{}
 	for i := 0; i < t.NumFields(); i++ {
 		f := t.Field(i)
@@ -171,7 +270,7 @@ func (p *Parser) parseStruct(t *types.Struct) (model.Type, error) {
 		if f.Embedded() {
 			name = ""
 		}
-		typ, err := p.parseType(f.Type())
+		typ, err := tp.parseType(f.Type())
 		if err != nil {
 			return nil, err
 		}
@@ -181,11 +280,11 @@ func (p *Parser) parseStruct(t *types.Struct) (model.Type, error) {
 	return model.NewTypeStruct(fields), nil
 }
 
-func (p *Parser) parseParameter(t *types.Tuple) ([]*model.Parameter, error) {
+func (tp *typeParser) parseParameter(t *types.Tuple) ([]*model.Parameter, error) {
 	params := []*model.Parameter{}
 	for i := 0; i < t.Len(); i++ {
 		v := t.At(i)
-		typ, err := p.parseType(v.Type())
+		typ, err := tp.parseType(v.Type())
 		if err != nil {
 			return nil, err
 		}
@@ -194,15 +293,31 @@ func (p *Parser) parseParameter(t *types.Tuple) ([]*model.Parameter, error) {
 	return params, nil
 }
 
-func (p *Parser) parseTuple(t *types.Tuple) ([]model.Type, error) {
+func (tp *typeParser) parseTuple(t *types.Tuple) ([]model.Type, error) {
 	ms := []model.Type{}
 	for i := 0; i < t.Len(); i++ {
 		v := t.At(i)
-		vv, err := p.parseType(v.Type())
+		vv, err := tp.parseType(v.Type())
 		if err != nil {
 			return nil, err
 		}
 		ms = append(ms, vv)
 	}
 	return ms, nil
+}
+
+func (tp *typeParser) parseFunc(t *types.Func) (*model.Func, error) {
+	sig, _ := t.Type().(*types.Signature) // *types.Func's Type() is always a *Signature
+	typ, err := tp.parseType(sig)
+	if err != nil {
+		return nil, err
+	}
+	typf, ok := typ.(*model.TypeSignature)
+	if !ok {
+		err = fmt.Errorf("internal error. not TypeSignature: <%s>'s type is <%T> ", t.String(), typf)
+		tp.p.log.Println(err)
+		return nil, err
+	}
+
+	return model.NewFunc(t.Name(), typf, ""), nil
 }
