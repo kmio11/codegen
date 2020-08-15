@@ -4,55 +4,73 @@ import "fmt"
 
 // File contains the information related to the file.
 type File struct {
-	Path         string
-	PkgName      string
-	PkgPath      string
-	Dependencies *PackageMap // packages this package imports.
-	Contents     []Contents  // functions, interfaces, structs , ...
+	path         string
+	pkg          *PkgInfo
+	dependencies *PackageMap
+	contents     []Contents
 }
 
 // NewFile returns File.
 func NewFile(path, pkgname, pkgpath string, dependencies *PackageMap) *File {
 	return &File{
-		Path:         path,
-		PkgName:      pkgname,
-		PkgPath:      pkgpath,
-		Dependencies: dependencies,
+		path:         path,
+		pkg:          NewPkgInfo(pkgname, pkgpath, ""),
+		dependencies: dependencies,
 	}
+}
+
+// Path returns filepath.
+func (f *File) Path() string {
+	return f.path
+}
+
+// Pkg returns PkgInfo the file belongs to.
+func (f *File) Pkg() *PkgInfo {
+	return f.pkg
+}
+
+// Dependencies returns packages the file may depends on.
+func (f *File) Dependencies() *PackageMap {
+	return f.dependencies
+}
+
+// DependenciesTidy add missing and remove unused package.
+func (f *File) DependenciesTidy() *PackageMap {
+	f.dependencies.CleanDependencies()
+	for _, c := range f.contents {
+		c.addImports(f.dependencies)
+	}
+
+	f.dependencies.ResolveNameConflict(f.pkg.Path)
+	return f.dependencies
+}
+
+// Contents returnss contents of file. functions, interfaces, structs , ...
+func (f *File) Contents() []Contents {
+	return f.contents
 }
 
 // Print returns code.
 func (f *File) Print() string {
 	var s string
-	s += fmt.Sprintf("package %s", f.PkgName)
+	s += fmt.Sprintf("package %s", f.pkg.Name)
 	s += "\n"
-	s += f.Dependencies.PrintCode(f.PkgPath)
+	s += f.dependencies.PrintCode(f.pkg.Path)
 
-	for _, c := range f.Contents {
+	for _, c := range f.contents {
 		s += "\n"
-		s += c.PrintCode(f.PkgPath, *f.Dependencies)
+		s += c.PrintCode(f.pkg.Path, *f.dependencies)
 	}
 
 	return s
 }
 
-// ImportsTidy set Dependencies in this file.
-func (f *File) ImportsTidy() *PackageMap {
-	f.Dependencies.CleanDependencies()
-	for _, c := range f.Contents {
-		c.addImports(f.Dependencies)
-	}
-
-	f.Dependencies.ResolveNameConflict(f.PkgPath)
-	return f.Dependencies
-}
-
 // AddInterface add interface to file.
 func (f *File) AddInterface(intf *Interface) {
-	f.Contents = append(f.Contents, intf)
+	f.contents = append(f.contents, intf)
 }
 
 // AddStruct add interface to file.
 func (f *File) AddStruct(s *Struct) {
-	f.Contents = append(f.Contents, s)
+	f.contents = append(f.contents, s)
 }

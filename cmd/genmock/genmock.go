@@ -75,11 +75,11 @@ func main() {
 	if len(*flagOut) == 0 {
 		fmt.Println(string(src))
 	} else {
-		err := ioutil.WriteFile(file.Path, src, 0644)
+		err := ioutil.WriteFile(file.Path(), src, 0644)
 		if err != nil {
 			log.Fatalf("writing output: %s\n", err)
 		}
-		fmt.Printf("File created successfully : %s\n", file.Path)
+		fmt.Printf("File created successfully : %s\n", file.Path())
 	}
 
 	os.Exit(0)
@@ -121,7 +121,7 @@ func mockfile(targetPkg *model.Package, targetIntf *model.Interface) *model.File
 
 	// create file which has mock.
 	file := model.NewFile(outFile, outPkgName, outPkgPath, targetPkg.CopyDependencies())
-	file.ImportsTidy()
+	file.DependenciesTidy()
 
 	// create mock impl
 	mockImpl := mockImpl(targetPkg, targetIntf, outPkg)
@@ -135,7 +135,7 @@ func mockfile(targetPkg *model.Package, targetIntf *model.Interface) *model.File
 		file.AddStruct(stub)
 	}
 
-	file.ImportsTidy()
+	file.DependenciesTidy()
 	return file
 }
 
