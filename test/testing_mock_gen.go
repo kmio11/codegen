@@ -10,10 +10,12 @@ import (
 
 type MockSomeInterface struct {
 	SomeInterface
-	FakeFuncA func(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
-	FakeFuncB func(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *dummy.Dummy)
-	FakeFuncC func(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
-	FakeFuncD func(i interface{}, ii interface {
+	FakeCycle  func(cc CycleStr)
+	FakeFuncA  func(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
+	FakeFuncB  func(d dummy.Dummy, d2 dummy0.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *dummy.Dummy)
+	FakeFuncC  func(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
+	FakeFuncCA func(d SomeStruct, r SomeStruct)
+	FakeFuncD  func(i interface{}, ii interface {
 		SomeInterface
 		Func(x int) int
 	}, s struct{}, ss struct {
@@ -22,6 +24,10 @@ type MockSomeInterface struct {
 		str string
 	})
 	FakeFuncE func(string, string, int)
+}
+
+func (m MockSomeInterface) Cycle(a0 CycleStr) {
+	m.FakeCycle(a0)
 }
 
 func (m MockSomeInterface) FuncA(a0 [2]string, a1 []int, a2 int, a3 <-chan string, a4 chan<- int, a5 chan int64, a6 *int, a7 ...string) (map[string]string, error) {
@@ -34,6 +40,10 @@ func (m MockSomeInterface) FuncB(a0 dummy.Dummy, a1 dummy0.Dummy2, a2 SomeStruct
 
 func (m MockSomeInterface) FuncC(a0 func(a int, b int, c dummy.Dummy) error, a1 int) (string, int) {
 	return m.FakeFuncC(a0, a1)
+}
+
+func (m MockSomeInterface) FuncCA(a0 SomeStruct, a1 SomeStruct) {
+	m.FakeFuncCA(a0, a1)
 }
 
 func (m MockSomeInterface) FuncD(a0 interface{}, a1 interface {
@@ -52,15 +62,21 @@ func (m MockSomeInterface) FuncE(a0 string, a1 string, a2 int) {
 }
 
 type StubSomeInterface struct {
-	FuncA StubFuncA
-	FuncB StubFuncB
-	FuncC StubFuncC
-	FuncD StubFuncD
-	FuncE StubFuncE
+	Cycle  StubCycle
+	FuncA  StubFuncA
+	FuncB  StubFuncB
+	FuncC  StubFuncC
+	FuncCA StubFuncCA
+	FuncD  StubFuncD
+	FuncE  StubFuncE
 }
 
 func (s StubSomeInterface) NewMock() SomeInterface {
-	return &MockSomeInterface{FakeFuncA: s.FakeFuncA, FakeFuncB: s.FakeFuncB, FakeFuncC: s.FakeFuncC, FakeFuncD: s.FakeFuncD, FakeFuncE: s.FakeFuncE}
+	return &MockSomeInterface{FakeFuncD: s.FakeFuncD, FakeFuncE: s.FakeFuncE, FakeCycle: s.FakeCycle, FakeFuncA: s.FakeFuncA, FakeFuncB: s.FakeFuncB, FakeFuncC: s.FakeFuncC, FakeFuncCA: s.FakeFuncCA}
+}
+
+func (s StubSomeInterface) FakeCycle(a0 CycleStr) {
+	return
 }
 
 func (s StubSomeInterface) FakeFuncA(a0 [2]string, a1 []int, a2 int, a3 <-chan string, a4 chan<- int, a5 chan int64, a6 *int, a7 ...string) (map[string]string, error) {
@@ -73,6 +89,10 @@ func (s StubSomeInterface) FakeFuncB(a0 dummy.Dummy, a1 dummy0.Dummy2, a2 SomeSt
 
 func (s StubSomeInterface) FakeFuncC(a0 func(a int, b int, c dummy.Dummy) error, a1 int) (string, int) {
 	return s.FuncC.R0, s.FuncC.R1
+}
+
+func (s StubSomeInterface) FakeFuncCA(a0 SomeStruct, a1 SomeStruct) {
+	return
 }
 
 func (s StubSomeInterface) FakeFuncD(a0 interface{}, a1 interface {
@@ -90,21 +110,22 @@ func (s StubSomeInterface) FakeFuncE(a0 string, a1 string, a2 int) {
 	return
 }
 
+type StubCycle struct{}
+
 type StubFuncA struct {
 	R0 map[string]string
 	R1 error
 }
 
-type StubFuncB struct {
-}
+type StubFuncB struct{}
 
 type StubFuncC struct {
 	R0 string
 	R1 int
 }
 
-type StubFuncD struct {
-}
+type StubFuncCA struct{}
 
-type StubFuncE struct {
-}
+type StubFuncD struct{}
+
+type StubFuncE struct{}

@@ -178,13 +178,13 @@ func (tp *typeParser) parseChan(t *types.Chan) (model.Type, error) {
 }
 
 func (tp *typeParser) parseInterface(t *types.Interface) (model.Type, error) {
-	embeddeds := []model.Type{}
+	embeddeds := []*model.TypeNamed{}
 	for i := 0; i < t.NumEmbeddeds(); i++ {
 		embedded, err := tp.parseType(t.EmbeddedType(i))
 		if err != nil {
 			return nil, err
 		}
-		embeddeds = append(embeddeds, embedded)
+		embeddeds = append(embeddeds, embedded.(*model.TypeNamed))
 	}
 
 	emethods := []*model.Func{}

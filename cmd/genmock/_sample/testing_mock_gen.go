@@ -38,6 +38,4 @@ type StubAdd struct {
 	R1 error
 }
 
-type StubName struct {
-	R0 string
-}
+type StubName struct{ R0 string }

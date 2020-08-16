@@ -122,12 +122,12 @@ func (t *TypeChan) addImports(pm *PackageMap) {
 
 // TypeInterface is interface type
 type TypeInterface struct {
-	embeddeds       []Type
+	embeddeds       []*TypeNamed
 	explicitMethods []*Func
 }
 
 // NewTypeInterface returns TypeInterface.
-func NewTypeInterface(embeddeds []Type, exMethods []*Func) *TypeInterface {
+func NewTypeInterface(embeddeds []*TypeNamed, exMethods []*Func) *TypeInterface {
 	return &TypeInterface{
 		embeddeds:       embeddeds,
 		explicitMethods: exMethods,
@@ -135,13 +135,43 @@ func NewTypeInterface(embeddeds []Type, exMethods []*Func) *TypeInterface {
 }
 
 // Embeddeds returns Embedded types.
-func (t *TypeInterface) Embeddeds() []Type {
+func (t *TypeInterface) Embeddeds() []*TypeNamed {
 	return t.embeddeds
 }
 
 // ExplicitMethods returns explicit methods.
 func (t *TypeInterface) ExplicitMethods() []*Func {
 	return t.explicitMethods
+}
+
+// Methods returns all methods interface has.
+func (t *TypeInterface) Methods() []*Func {
+	return getIntfMethod(t)
+}
+
+// getIntfMethod returns all methods interface has.
+func getIntfMethod(t Type) []*Func {
+	methods := []*Func{}
+	var get func(Type)
+	get = func(typ Type) {
+		if typ == nil {
+			return
+		}
+		switch tt := typ.(type) {
+		case *TypeNamed:
+			get(tt.org)
+			return
+		case *TypeInterface:
+			for _, em := range tt.embeddeds {
+				get(em)
+			}
+			methods = append(methods, tt.explicitMethods...)
+		default:
+			panic("unexpected type.")
+		}
+	}
+	get(t)
+	return methods
 }
 
 // PrintType returns type.
@@ -234,6 +264,11 @@ func (t *TypeNamed) Name() string {
 	return t.name
 }
 
+// Org returns original type.
+func (t *TypeNamed) Org() Type {
+	return t.org
+}
+
 // PrintType returns type.
 func (t *TypeNamed) PrintType(myPkgPath string, pm PackageMap) string {
 	if t.pkg == nil {
@@ -241,10 +276,17 @@ func (t *TypeNamed) PrintType(myPkgPath string, pm PackageMap) string {
 	}
 	pkg := pm.Get(t.pkg.Path())
 	if pkg == nil {
-		// TODO: is internal error?
 		pkg = t.pkg
 	}
 	return pkg.Prefix(myPkgPath) + t.name
+}
+
+// PrintTypeDef returns type definition.
+func (t *TypeNamed) PrintTypeDef(myPkgPath string, pm PackageMap) string {
+	/*
+		e.g. type XXX struct{}
+	*/
+	return fmt.Sprintf("type %s %s", t.name, t.org.PrintType(myPkgPath, pm))
 }
 
 func (t *TypeNamed) addImports(pm *PackageMap) {
@@ -395,6 +437,11 @@ func NewTypeStruct(fields []*Field) *TypeStruct {
 // Fields returns fields.
 func (t *TypeStruct) Fields() []*Field {
 	return t.fields
+}
+
+// AddField add field to struct
+func (t *TypeStruct) AddField(f *Field) {
+	t.fields = append(t.fields, f)
 }
 
 // PrintType returns type.

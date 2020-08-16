@@ -12,7 +12,7 @@ func (p *Parser) parseInterfaceObj(obj types.Object) (*model.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	methods := []*model.Method{}
+	methods := []*model.Func{}
 	for i := 0; i < mset.Len(); i++ {
 		method := mset.At(i)
 		mtype, err := p.parseType(method.Type())
@@ -23,13 +23,8 @@ func (p *Parser) parseInterfaceObj(obj types.Object) (*model.Interface, error) {
 		if !ok {
 			return nil, fmt.Errorf("internal error")
 		}
-		rcv, err := p.parseType(method.Recv())
-		if err != nil {
-			return nil, err
-		}
 		methods = append(methods,
-			model.NewMethod(
-				model.NewParameter("", rcv),
+			model.NewFunc(
 				method.Obj().Name(),
 				sig,
 				"",

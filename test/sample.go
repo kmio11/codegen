@@ -8,7 +8,9 @@ import (
 )
 
 // SomeInterface is test.
+//go:generate go run github.com/kmio11/codegen/cmd/genmock -type SomeInterface -out testing_mock_gen.go
 type SomeInterface interface {
+	NCycleIntf
 	FuncA(arr [2]string, slice []int, n int, chs <-chan string, chr chan<- int, chrs chan int64, ip *int, v ...string) (map[string]string, error)
 	FuncB(d dummy.Dummy, d2 dummy2.Dummy2, ss SomeStruct, i io.Writer, si SomeInterface, r *dummy.Dummy)
 	FuncC(fn func(a int, b int, c dummy.Dummy) error, n int) (a string, b int)
@@ -28,9 +30,11 @@ type SomeInterface interface {
 	FuncE(string, string, int)
 }
 
+type NCycleIntf CycleIntf
+
 type CycleIntf interface {
 	Cycle(cc CycleStr)
-	FuncB(d SomeStruct, r SomeStruct)
+	FuncCA(d SomeStruct, r SomeStruct)
 }
 
 type CycleStr struct {
