@@ -7,6 +7,7 @@ import (
 
 // Type is type.
 type Type interface {
+	// PrintType returns type.
 	PrintType(myPkgPath string, pm PackageMap) string
 	addImports(pm *PackageMap)
 }
@@ -35,19 +36,6 @@ func (t *TypeArray) Type() Type {
 	return t.typ
 }
 
-// PrintType returns type.
-func (t *TypeArray) PrintType(myPkgPath string, pm PackageMap) string {
-	s := "[]"
-	if t.Len() > -1 {
-		s = fmt.Sprintf("[%d]", t.Len())
-	}
-	return s + t.Type().PrintType(myPkgPath, pm)
-}
-
-func (t *TypeArray) addImports(pm *PackageMap) {
-	t.Type().addImports(pm)
-}
-
 // TypeBasic represents all types that are not composed from simpler types.
 // strings, booleans, and numbers
 type TypeBasic string
@@ -56,15 +44,6 @@ type TypeBasic string
 func NewTypeBasic(s string) *TypeBasic {
 	ss := TypeBasic(s)
 	return &ss
-}
-
-// PrintType returns type.
-func (t *TypeBasic) PrintType(myPkgPath string, pm PackageMap) string {
-	return string(*t)
-}
-
-func (t *TypeBasic) addImports(pm *PackageMap) {
-	// do nothing
 }
 
 // TypeChan is map type.
@@ -99,25 +78,6 @@ func (t *TypeChan) Dir() ChanDir {
 // Type returns type.
 func (t *TypeChan) Type() Type {
 	return t.typ
-}
-
-// PrintType returns type.
-func (t *TypeChan) PrintType(myPkgPath string, pm PackageMap) string {
-	s := t.typ.PrintType(myPkgPath, pm)
-	switch t.dir {
-	case SendRecv:
-		return "chan " + s
-	case SendOnly:
-		return "chan<- " + s
-	case RecvOnly:
-		return "<-chan " + s
-	default:
-		return "chan " + s
-	}
-}
-
-func (t *TypeChan) addImports(pm *PackageMap) {
-	t.typ.addImports(pm)
 }
 
 // TypeInterface is interface type
@@ -174,36 +134,6 @@ func getIntfMethod(t Type) []*Func {
 	return methods
 }
 
-// PrintType returns type.
-func (t *TypeInterface) PrintType(myPkgPath string, pm PackageMap) string {
-	/*
-		interface{Embedded ;Func(); Func()}
-	*/
-
-	str := "interface{"
-	for _, e := range t.embeddeds {
-		str += e.PrintType(myPkgPath, pm)
-		str += ";"
-	}
-	for _, e := range t.explicitMethods {
-		str += e.PrintDef(myPkgPath, pm)
-		str += ";"
-	}
-	str = strings.TrimRight(str, ";")
-	str += "}"
-
-	return str
-}
-
-func (t *TypeInterface) addImports(pm *PackageMap) {
-	for _, e := range t.embeddeds {
-		e.addImports(pm)
-	}
-	for _, e := range t.explicitMethods {
-		e.addImports(pm)
-	}
-}
-
 // TypeMap is map type.
 type TypeMap struct {
 	key   Type
@@ -226,16 +156,6 @@ func (t *TypeMap) Key() Type {
 // Value returns value type.
 func (t *TypeMap) Value() Type {
 	return t.value
-}
-
-// PrintType returns type.
-func (t *TypeMap) PrintType(myPkgPath string, pm PackageMap) string {
-	return fmt.Sprintf("map[%s]%s", t.key.PrintType(myPkgPath, pm), t.value.PrintType(myPkgPath, pm))
-}
-
-func (t *TypeMap) addImports(pm *PackageMap) {
-	t.key.addImports(pm)
-	t.value.addImports(pm)
 }
 
 // TypeNamed is named.
@@ -269,30 +189,12 @@ func (t *TypeNamed) Org() Type {
 	return t.org
 }
 
-// PrintType returns type.
-func (t *TypeNamed) PrintType(myPkgPath string, pm PackageMap) string {
-	if t.pkg == nil {
-		return t.name
-	}
-	pkg := pm.Get(t.pkg.Path())
-	if pkg == nil {
-		pkg = t.pkg
-	}
-	return pkg.Prefix(myPkgPath) + t.name
-}
-
 // PrintTypeDef returns type definition.
 func (t *TypeNamed) PrintTypeDef(myPkgPath string, pm PackageMap) string {
 	/*
 		e.g. type XXX struct{}
 	*/
 	return fmt.Sprintf("type %s %s", t.name, t.org.PrintType(myPkgPath, pm))
-}
-
-func (t *TypeNamed) addImports(pm *PackageMap) {
-	if t.pkg != nil {
-		pm.SetRequired(t.pkg.Path(), true)
-	}
 }
 
 // TypePointer is a pointer.
@@ -310,15 +212,6 @@ func NewPointer(typ Type) Type {
 // Type returns type.
 func (t *TypePointer) Type() Type {
 	return t.typ
-}
-
-// PrintType returns type.
-func (t *TypePointer) PrintType(myPkgPath string, pm PackageMap) string {
-	return "*" + t.typ.PrintType(myPkgPath, pm)
-}
-
-func (t *TypePointer) addImports(pm *PackageMap) {
-	t.typ.addImports(pm)
 }
 
 // TypeSignature is function.
@@ -351,60 +244,6 @@ func (t *TypeSignature) Variadic() *Parameter {
 // Results returns results.
 func (t *TypeSignature) Results() []*Parameter {
 	return t.results
-}
-
-// PrintType returns type.
-func (t *TypeSignature) PrintType(myPkgPath string, pm PackageMap) string {
-	s := "func"
-	s += t.printArgs(myPkgPath, pm)
-	s += t.printResults(myPkgPath, pm)
-	return s
-}
-
-// PrintParams print params
-// for example : (x int, y int)
-func (t *TypeSignature) printArgs(myPkgPath string, pm PackageMap) string {
-	// args
-	s := "("
-	for _, param := range t.args {
-		s += param.PrintNameAndType(myPkgPath, pm)
-		s += ","
-	}
-	s = strings.TrimRight(s, ",")
-	if t.variadic != nil {
-		s += fmt.Sprintf(",%s ...%s", t.variadic.Name(), t.variadic.Type().PrintType(myPkgPath, pm))
-	}
-	s += ")"
-	return s
-}
-
-func (t *TypeSignature) printResults(myPkgPath string, pm PackageMap) string {
-	s := ""
-	if len(t.results) > 1 {
-		s += "("
-	}
-	for i, result := range t.results {
-		if i != 0 {
-			s += ","
-		}
-		s += result.PrintNameAndType(myPkgPath, pm)
-	}
-	if len(t.results) > 1 {
-		s += ")"
-	}
-	return s
-}
-
-func (t *TypeSignature) addImports(pm *PackageMap) {
-	for _, p := range t.args {
-		p.addImports(pm)
-	}
-	if t.variadic != nil {
-		t.variadic.addImports(pm)
-	}
-	for _, p := range t.results {
-		p.addImports(pm)
-	}
 }
 
 // PrintCallArgsFmt returns format to call this function.
@@ -444,24 +283,61 @@ func (t *TypeStruct) AddField(f *Field) {
 	t.fields = append(t.fields, f)
 }
 
-// PrintType returns type.
-func (t *TypeStruct) PrintType(myPkgPath string, pm PackageMap) string {
-	/*
-		struct{n XX; n XX}
-	*/
-	str := "struct{"
-	for _, f := range t.fields {
-		str += f.PrintDef(myPkgPath, pm)
-		str += ";"
-	}
-	str = strings.TrimRight(str, ";")
-	str += "}"
+/*
+	Implementations for Type methods.
+*/
 
-	return str
+func (t *TypeArray) addImports(pm *PackageMap)     { typeImports(t, pm) }
+func (t *TypeBasic) addImports(pm *PackageMap)     { typeImports(t, pm) }
+func (t *TypeChan) addImports(pm *PackageMap)      { typeImports(t, pm) }
+func (t *TypeInterface) addImports(pm *PackageMap) { typeImports(t, pm) }
+func (t *TypeMap) addImports(pm *PackageMap)       { typeImports(t, pm) }
+func (t *TypeNamed) addImports(pm *PackageMap)     { typeImports(t, pm) }
+func (t *TypePointer) addImports(pm *PackageMap)   { typeImports(t, pm) }
+func (t *TypeSignature) addImports(pm *PackageMap) { typeImports(t, pm) }
+func (t *TypeStruct) addImports(pm *PackageMap)    { typeImports(t, pm) }
+
+// PrintType returns type.
+func (t *TypeArray) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
 }
 
-func (t *TypeStruct) addImports(pm *PackageMap) {
-	for _, f := range t.fields {
-		f.addImports(pm)
-	}
+// PrintType returns type.
+func (t *TypeBasic) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
+}
+
+// PrintType returns type.
+func (t *TypeChan) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
+}
+
+// PrintType returns type.
+func (t *TypeInterface) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
+}
+
+// PrintType returns type.
+func (t *TypeMap) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
+}
+
+// PrintType returns type.
+func (t *TypeNamed) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
+}
+
+// PrintType returns type.
+func (t *TypePointer) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
+}
+
+// PrintType returns type.
+func (t *TypeSignature) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
+}
+
+// PrintType returns type.
+func (t *TypeStruct) PrintType(myPkgPath string, pm PackageMap) string {
+	return printType(t, myPkgPath, pm)
 }
