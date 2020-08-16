@@ -51,8 +51,8 @@ const (
 	pstatParsed              // already parsed
 )
 
-// wasParsed returns already parsed type.
-// if nil, specified type was not parsed.
+// wasParsed returns parsing status.
+// If status is parsing, returns pointer that will be set value when parsing process finish.
 func (tp *typeParser) wasParsed(t types.Type) (addr model.Type, stat parseStatus, add func(model.Type) model.Type) {
 	key := tp.getParsedKey(t)
 	stat = pstatUnknown
