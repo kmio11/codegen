@@ -1,6 +1,8 @@
 package main
 
 import (
+	"sort"
+
 	"github.com/kmio11/codegen/generator"
 	"github.com/kmio11/codegen/generator/model"
 	"github.com/kmio11/codegen/generator/parser"
@@ -320,8 +322,16 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 	}
 
 	// NewMock method
+	// sort
+	keys := []string{}
+	for k := range mockInitVals {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	newMockBody := "return &" + mockImpl.Name() + "{"
-	for k, v := range mockInitVals {
+	for _, k := range keys {
+		v := mockInitVals[k]
 		newMockBody += k + ":" + v
 		newMockBody += ","
 	}

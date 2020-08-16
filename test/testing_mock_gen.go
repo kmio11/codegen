@@ -72,7 +72,7 @@ type StubSomeInterface struct {
 }
 
 func (s StubSomeInterface) NewMock() SomeInterface {
-	return &MockSomeInterface{FakeFuncD: s.FakeFuncD, FakeFuncE: s.FakeFuncE, FakeCycle: s.FakeCycle, FakeFuncA: s.FakeFuncA, FakeFuncB: s.FakeFuncB, FakeFuncC: s.FakeFuncC, FakeFuncCA: s.FakeFuncCA}
+	return &MockSomeInterface{FakeCycle: s.FakeCycle, FakeFuncA: s.FakeFuncA, FakeFuncB: s.FakeFuncB, FakeFuncC: s.FakeFuncC, FakeFuncCA: s.FakeFuncCA, FakeFuncD: s.FakeFuncD, FakeFuncE: s.FakeFuncE}
 }
 
 func (s StubSomeInterface) FakeCycle(a0 CycleStr) {
