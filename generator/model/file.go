@@ -50,8 +50,8 @@ func (f *File) Contents() []Contents {
 	return f.contents
 }
 
-// Print returns code.
-func (f *File) Print() string {
+// PrintCode returns code.
+func (f *File) PrintCode() string {
 	var s string
 	s += fmt.Sprintf("package %s", f.pkg.Name())
 	s += "\n"

@@ -69,7 +69,7 @@ func main() {
 		PrintHeader(cmdName).
 		Printf("// Mock for %s.%s", targetPkg.Path, targetIntf.Name()).
 		NewLine().
-		AddContents(file).PrintContents().
+		Printf(file.PrintCode()).
 		Format()
 
 	// output

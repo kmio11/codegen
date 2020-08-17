@@ -10,13 +10,7 @@ import (
 // Generator holds the state of the analysis. Primarily used to buffer
 // the output for format.Source.
 type Generator struct {
-	buf      bytes.Buffer // Accumulated output.
-	contents []Printer
-}
-
-// Printer is interface to print codes.
-type Printer interface {
-	Print() string
+	buf bytes.Buffer // Accumulated output.
 }
 
 // Format generate formatted source code.
@@ -66,20 +60,5 @@ func (g *Generator) PrintImport(pkgmap map[string]string) *Generator {
 	}
 	g = g.Printf(")").NewLine()
 
-	return g
-}
-
-// PrintContents print all contents to buf.
-func (g *Generator) PrintContents() *Generator {
-	for _, c := range g.contents {
-		g = g.Printf(c.Print())
-	}
-	g.contents = []Printer{}
-	return g
-}
-
-// AddContents add contents.
-func (g *Generator) AddContents(c ...Printer) *Generator {
-	g.contents = append(g.contents, c...)
 	return g
 }
