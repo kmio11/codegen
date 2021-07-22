@@ -1,116 +1,135 @@
-package main
+package mock
 
 import (
+	"flag"
+	"io/ioutil"
 	"sort"
 
 	"github.com/kmio11/codegen/generator"
 	"github.com/kmio11/codegen/generator/model"
 	"github.com/kmio11/codegen/generator/parser"
 
-	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 )
 
-const (
-	cmdName = "genmock"
-)
-
-var (
-	flagPkg         = flag.String("pkg", ".", "The package containing interfaces to be mocked.")
-	flagType        = flag.String("type", "", "The name of the type to be mocked.")
-	flagOut         = flag.String("out", "", "Output file; defaults to stdout.")
-	flagOutPkg      = flag.String("outpkg", "", "Output package name; defaults to the same package specified by -pkg")
-	flagSelfPkgPath = flag.String("selfpkg", "", "The full package import path of the output package.")
-)
-
-const usageTxt = `
-usage: 
-    mock -pkg <package> -type <type> [-out <out>] [-outpkg <outpkg> [-selfpkg <selfpkg>]]
-`
-
-func init() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "%s\n", usageTxt)
-		flag.PrintDefaults()
-	}
+// Command is command
+type Command struct {
+	fs              *flag.FlagSet
+	flagPkg         *string
+	flagType        *string
+	flagOut         *string
+	flagOutPkg      *string
+	flagSelfPkgPath *string
 }
 
-func usage() {
-	flag.Usage()
-	os.Exit(2)
+func New() *Command {
+	c := &Command{}
+	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
+	c.flagPkg = c.fs.String("pkg", ".", "The package containing interfaces to be mocked.")
+	c.flagType = c.fs.String("type", "", "The name of the type to be mocked.")
+	c.flagOut = c.fs.String("out", "", "Output file; defaults to stdout.")
+	c.flagOutPkg = c.fs.String("outpkg", "", "Output package name; defaults to the same package specified by -pkg")
+	c.flagSelfPkgPath = c.fs.String("selfpkg", "", "The full package import path of the output package.")
+
+	return c
 }
 
-func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+func (c Command) Name() string {
+	return "mock"
+}
 
-	// parse args
-	flag.Parse()
-	if len(*flagPkg)*len(*flagType) == 0 {
-		usage()
+func (c Command) Description() string {
+	return "generate mock"
+}
+
+func (c Command) Usage(cmd string) {
+	fmt.Printf(`Usage:
+    %s %s -pkg <package> -type <type> [-out <out>] [-outpkg <outpkg> [-selfpkg <selfpkg>]]
+
+`,
+		cmd, c.Name(),
+	)
+	c.fs.PrintDefaults()
+}
+
+func (c Command) Parse(args []string) error {
+	err := c.fs.Parse(args)
+	if err != nil {
+		return err
 	}
-	if len(*flagOutPkg) == 0 && len(*flagSelfPkgPath) != 0 {
-		usage()
+	if len(*c.flagPkg)*len(*c.flagType) == 0 {
+		return fmt.Errorf("")
+	}
+	if len(*c.flagOutPkg) == 0 && len(*c.flagSelfPkgPath) != 0 {
+		return fmt.Errorf("")
 	}
 
+	return nil
+}
+
+func (c Command) Execute() int {
 	// parse
-	targetPkg, targetIntf := parse()
+	targetPkg, targetIntf, err := parse(*c.flagType, *c.flagPkg)
+	if err != nil {
+		log.Println(err)
+		return 1
+	}
 
 	// create mock
-	file := mockfile(targetPkg, targetIntf)
+	file := mockfile(targetPkg, targetIntf, *c.flagOut, *c.flagOutPkg, *c.flagSelfPkgPath)
 
 	// generate
 	g := &generator.Generator{}
 	src := g.
-		PrintHeader(cmdName).
+		PrintHeader(c.Name()).
 		Printf("// Mock for %s.%s", targetPkg.Path, targetIntf.Name()).
 		NewLine().
 		Printf(file.PrintCode()).
 		Format()
 
 	// output
-	if len(*flagOut) == 0 {
+	if file.Path() == "" {
 		fmt.Println(string(src))
 	} else {
 		err := ioutil.WriteFile(file.Path(), src, 0644)
 		if err != nil {
-			log.Fatalf("writing output: %s\n", err)
+			log.Printf("writing output: %s\n", err)
+			return 1
 		}
 		fmt.Printf("File created successfully : %s\n", file.Path())
 	}
 
-	os.Exit(0)
+	return 0
 }
 
-func parse() (*model.Package, *model.Interface) {
+func parse(typ string, pkg string) (*model.Package, *model.Interface, error) {
 	// parse target package
 	parser := parser.NewParser(
 		parser.OptLogger(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)),
-		parser.OptParseTarget([]string{*flagType}),
+		parser.OptParseTarget([]string{typ}),
 	)
-	patterns := *flagPkg
+	patterns := pkg
 	err := parser.LoadPackage(patterns)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, err
 	}
 	targetPkg, err := parser.Parse()
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, err
+
 	}
 	targetIntf := targetPkg.Interfaces[0]
 
-	return targetPkg, targetIntf
+	return targetPkg, targetIntf, nil
 }
 
-func mockfile(targetPkg *model.Package, targetIntf *model.Interface) *model.File {
+func mockfile(targetPkg *model.Package, targetIntf *model.Interface, outFile, outPkgName, selfPkgPath string) *model.File {
 	// output
-	outFile := *flagOut
-	outPkgName := *flagOutPkg
-	outPkgPath := *flagSelfPkgPath
+	outPkgPath := selfPkgPath
 	if outPkgName != "" && outPkgPath == "" {
 		outPkgPath = outPkgName
 	}
