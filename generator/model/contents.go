@@ -61,6 +61,20 @@ func NewInterface(name string, pkg *PkgInfo, methods []*Func, embeddeds ...*Type
 	}
 }
 
+// NewGenericInterface returns generic Interface with type parameters.
+func NewGenericInterface(name string, pkg *PkgInfo, methods []*Func, typeParams []*TypeParameter, embeddeds ...*TypeNamed) *Interface {
+	return &Interface{
+		typ: NewGenericTypeNamed(pkg, name,
+			NewGenericTypeInterface(
+				embeddeds,
+				methods,
+				typeParams,
+			),
+			typeParams,
+		),
+	}
+}
+
 // Name returns name.
 func (i *Interface) Name() string {
 	return i.typ.Name()
@@ -74,6 +88,16 @@ func (i *Interface) Type() *TypeNamed {
 // Methods returns methods.
 func (i Interface) Methods() []*Func {
 	return getIntfMethod(i.typ)
+}
+
+// TypeParams returns type parameters.
+func (i *Interface) TypeParams() []*TypeParameter {
+	return i.typ.TypeParams()
+}
+
+// IsGeneric returns true if this interface has type parameters.
+func (i *Interface) IsGeneric() bool {
+	return i.typ.IsGeneric()
 }
 
 func (i Interface) addImports(pm *PackageMap) {
@@ -105,6 +129,14 @@ func NewStruct(name string, pkg *PkgInfo) *Struct {
 	}
 }
 
+// NewGenericStruct returns generic Struct with type parameters.
+func NewGenericStruct(name string, pkg *PkgInfo, typeParams []*TypeParameter) *Struct {
+	return &Struct{
+		typ:     NewGenericTypeNamed(pkg, name, NewTypeStruct([]*Field{}), typeParams),
+		methods: []*Method{},
+	}
+}
+
 // Name returns name.
 func (s *Struct) Name() string {
 	return s.typ.Name()
@@ -128,6 +160,16 @@ func (s *Struct) Methods() []*Method {
 // Fields returns fields.
 func (s *Struct) Fields() []*Field {
 	return s.TypeStruct().Fields()
+}
+
+// TypeParams returns type parameters.
+func (s *Struct) TypeParams() []*TypeParameter {
+	return s.typ.TypeParams()
+}
+
+// IsGeneric returns true if this struct has type parameters.
+func (s *Struct) IsGeneric() bool {
+	return s.typ.IsGeneric()
 }
 
 func (s *Struct) addImports(pm *PackageMap) {

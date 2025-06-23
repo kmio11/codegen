@@ -8,6 +8,12 @@ import (
 // PrintType returns type string.
 func printType(typ Type, myPkgPath string, pm PackageMap) string {
 	switch t := typ.(type) {
+	case *TypeParameter:
+		return t.name
+
+	case *TypeConstraint:
+		return t.name
+
 	case *TypeArray:
 		s := "[]"
 		if t.Len() > -1 {
@@ -33,6 +39,22 @@ func printType(typ Type, myPkgPath string, pm PackageMap) string {
 
 	case *TypeInterface:
 		s := "interface{"
+
+		// Add type parameters if this is a generic interface
+		if len(t.typeParams) > 0 {
+			s = "interface["
+			for i, param := range t.typeParams {
+				if i > 0 {
+					s += ", "
+				}
+				s += param.name
+				if param.constraint != nil {
+					s += " " + param.constraint.PrintType(myPkgPath, pm)
+				}
+			}
+			s += "]{"
+		}
+
 		for _, e := range t.Embeddeds() {
 			s += e.PrintType(myPkgPath, pm)
 			s += ";"
@@ -50,14 +72,32 @@ func printType(typ Type, myPkgPath string, pm PackageMap) string {
 		return fmt.Sprintf("map[%s]%s", t.Key().PrintType(myPkgPath, pm), t.Value().PrintType(myPkgPath, pm))
 
 	case *TypeNamed:
+		var result string
 		if t.Pkg() == nil {
-			return t.Name()
+			result = t.Name()
+		} else {
+			pkg := pm.Get(t.Pkg().Path())
+			if pkg == nil {
+				pkg = t.Pkg()
+			}
+			result = pkg.Prefix(myPkgPath) + t.Name()
 		}
-		pkg := pm.Get(t.Pkg().Path())
-		if pkg == nil {
-			pkg = t.Pkg()
+
+		// Add type parameters if this is a generic type
+		if len(t.typeParams) > 0 {
+			result += "["
+			for i, param := range t.typeParams {
+				if i > 0 {
+					result += ", "
+				}
+				result += param.name
+				// Don't print constraints when used as type arguments in fields
+				// Only print constraints in type definitions
+			}
+			result += "]"
 		}
-		return pkg.Prefix(myPkgPath) + t.Name()
+
+		return result
 
 	case *TypePointer:
 		return "*" + t.Type().PrintType(myPkgPath, pm)
@@ -69,12 +109,10 @@ func printType(typ Type, myPkgPath string, pm PackageMap) string {
 		return s
 
 	case *TypeStruct:
-		s := "struct{"
+		s := "struct {\n"
 		for _, f := range t.Fields() {
-			s += f.PrintDef(myPkgPath, pm)
-			s += ";"
+			s += "\t" + f.PrintDef(myPkgPath, pm) + "\n"
 		}
-		s = strings.TrimRight(s, ";")
 		s += "}"
 
 		return s

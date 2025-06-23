@@ -12,6 +12,80 @@ type Type interface {
 	addImports(pm *PackageMap)
 }
 
+// TypeParameter represents a generic type parameter
+type TypeParameter struct {
+	name       string
+	constraint Type
+	index      int
+}
+
+// NewTypeParameter returns TypeParameter
+func NewTypeParameter(name string, constraint Type, index int) *TypeParameter {
+	return &TypeParameter{
+		name:       name,
+		constraint: constraint,
+		index:      index,
+	}
+}
+
+// Name returns parameter name
+func (tp *TypeParameter) Name() string {
+	return tp.name
+}
+
+// Constraint returns constraint type
+func (tp *TypeParameter) Constraint() Type {
+	return tp.constraint
+}
+
+// Index returns parameter index
+func (tp *TypeParameter) Index() int {
+	return tp.index
+}
+
+// PrintType returns type parameter representation
+func (tp *TypeParameter) PrintType(myPkgPath string, pm PackageMap) string {
+	return tp.name
+}
+
+// addImports adds imports for type parameter
+func (tp *TypeParameter) addImports(pm *PackageMap) {
+	if tp.constraint != nil {
+		tp.constraint.addImports(pm)
+	}
+}
+
+// TypeConstraint represents built-in constraints like 'any' and 'comparable'
+type TypeConstraint struct {
+	name string
+}
+
+// NewTypeConstraint returns TypeConstraint
+func NewTypeConstraint(name string) *TypeConstraint {
+	return &TypeConstraint{name: name}
+}
+
+// Name returns constraint name
+func (tc *TypeConstraint) Name() string {
+	return tc.name
+}
+
+// PrintType returns constraint representation
+func (tc *TypeConstraint) PrintType(myPkgPath string, pm PackageMap) string {
+	return tc.name
+}
+
+// addImports adds imports for constraint
+func (tc *TypeConstraint) addImports(pm *PackageMap) {
+	// Built-in constraints don't need imports
+}
+
+// Common built-in constraints
+var (
+	ConstraintAny        = NewTypeConstraint("any")
+	ConstraintComparable = NewTypeConstraint("comparable")
+)
+
 // TypeArray is an array or slice type.
 type TypeArray struct {
 	len int64 // -1 for slices, >= 0 for arrays
@@ -84,6 +158,7 @@ func (t *TypeChan) Type() Type {
 type TypeInterface struct {
 	embeddeds       []*TypeNamed
 	explicitMethods []*Func
+	typeParams      []*TypeParameter
 }
 
 // NewTypeInterface returns TypeInterface.
@@ -91,6 +166,16 @@ func NewTypeInterface(embeddeds []*TypeNamed, exMethods []*Func) *TypeInterface 
 	return &TypeInterface{
 		embeddeds:       embeddeds,
 		explicitMethods: exMethods,
+		typeParams:      nil,
+	}
+}
+
+// NewGenericTypeInterface returns generic TypeInterface with type parameters.
+func NewGenericTypeInterface(embeddeds []*TypeNamed, exMethods []*Func, typeParams []*TypeParameter) *TypeInterface {
+	return &TypeInterface{
+		embeddeds:       embeddeds,
+		explicitMethods: exMethods,
+		typeParams:      typeParams,
 	}
 }
 
@@ -107,6 +192,16 @@ func (t *TypeInterface) ExplicitMethods() []*Func {
 // Methods returns all methods interface has.
 func (t *TypeInterface) Methods() []*Func {
 	return getIntfMethod(t)
+}
+
+// TypeParams returns type parameters.
+func (t *TypeInterface) TypeParams() []*TypeParameter {
+	return t.typeParams
+}
+
+// IsGeneric returns true if this interface has type parameters.
+func (t *TypeInterface) IsGeneric() bool {
+	return len(t.typeParams) > 0
 }
 
 // getIntfMethod returns all methods interface has.
@@ -160,17 +255,29 @@ func (t *TypeMap) Value() Type {
 
 // TypeNamed is named.
 type TypeNamed struct {
-	pkg  *PkgInfo
-	name string
-	org  Type
+	pkg        *PkgInfo
+	name       string
+	org        Type
+	typeParams []*TypeParameter
 }
 
 // NewTypeNamed returns TypeNamed.
 func NewTypeNamed(pkg *PkgInfo, name string, org Type) *TypeNamed {
 	return &TypeNamed{
-		pkg:  pkg,
-		name: name,
-		org:  org,
+		pkg:        pkg,
+		name:       name,
+		org:        org,
+		typeParams: nil,
+	}
+}
+
+// NewGenericTypeNamed returns generic TypeNamed with type parameters.
+func NewGenericTypeNamed(pkg *PkgInfo, name string, org Type, typeParams []*TypeParameter) *TypeNamed {
+	return &TypeNamed{
+		pkg:        pkg,
+		name:       name,
+		org:        org,
+		typeParams: typeParams,
 	}
 }
 
@@ -189,12 +296,40 @@ func (t *TypeNamed) Org() Type {
 	return t.org
 }
 
+// TypeParams returns type parameters.
+func (t *TypeNamed) TypeParams() []*TypeParameter {
+	return t.typeParams
+}
+
+// IsGeneric returns true if this type has type parameters.
+func (t *TypeNamed) IsGeneric() bool {
+	return len(t.typeParams) > 0
+}
+
 // PrintTypeDef returns type definition.
 func (t *TypeNamed) PrintTypeDef(myPkgPath string, pm PackageMap) string {
 	/*
 		e.g. type XXX struct{}
+		e.g. type XXX[T any] struct{}
 	*/
-	return fmt.Sprintf("type %s %s", t.name, t.org.PrintType(myPkgPath, pm))
+	typeName := t.name
+
+	// Add type parameters if this is a generic type
+	if len(t.typeParams) > 0 {
+		typeName += "["
+		for i, param := range t.typeParams {
+			if i > 0 {
+				typeName += ", "
+			}
+			typeName += param.name
+			if param.constraint != nil {
+				typeName += " " + param.constraint.PrintType(myPkgPath, pm)
+			}
+		}
+		typeName += "]"
+	}
+
+	return fmt.Sprintf("type %s %s", typeName, t.org.PrintType(myPkgPath, pm))
 }
 
 // TypePointer is a pointer.

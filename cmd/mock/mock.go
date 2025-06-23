@@ -211,21 +211,50 @@ func fmtSignature(org *model.TypeSignature) *model.TypeSignature {
 func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.PkgInfo) *model.Struct {
 	//mock struct
 	mockName := "Mock" + targetIntf.Name()
-	mockImpl := model.NewStruct(mockName, outPkg)
+	var mockImpl *model.Struct
+
+	// Handle generic interfaces
+	if targetIntf.IsGeneric() {
+		mockImpl = model.NewGenericStruct(mockName, outPkg, targetIntf.TypeParams())
+	} else {
+		mockImpl = model.NewStruct(mockName, outPkg)
+	}
 
 	// add interface to mock
+	var interfaceType *model.TypeNamed
+	if targetIntf.IsGeneric() {
+		// For embedded generic interfaces, use type parameters without constraints
+		typeParamsWithoutConstraints := []*model.TypeParameter{}
+		for i, param := range targetIntf.TypeParams() {
+			typeParamsWithoutConstraints = append(typeParamsWithoutConstraints,
+				model.NewTypeParameter(param.Name(), nil, i))
+		}
+		interfaceType = model.NewGenericTypeNamed(
+			model.NewPkgInfo(
+				targetPkg.Name,
+				targetPkg.Path,
+				"",
+			),
+			targetIntf.Name(),
+			targetIntf.Type().Org(),
+			typeParamsWithoutConstraints,
+		)
+	} else {
+		interfaceType = model.NewTypeNamed(
+			model.NewPkgInfo(
+				targetPkg.Name,
+				targetPkg.Path,
+				"",
+			),
+			targetIntf.Name(),
+			targetIntf.Type().Org(),
+		)
+	}
+
 	mockImpl.AddField(
 		model.NewField(
 			"",
-			model.NewTypeNamed(
-				model.NewPkgInfo(
-					targetPkg.Name,
-					targetPkg.Path,
-					"",
-				),
-				targetIntf.Name(),
-				targetIntf.Type(),
-			),
+			interfaceType,
 			"",
 		),
 	)
@@ -242,13 +271,33 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 		)
 
 		// Mock's methods
-		methodRcv := model.NewParameter(
-			mockRcvName,
-			model.NewTypeNamed(
+		// For method receivers on generic types, include type parameters without constraints
+		var baseType *model.TypeNamed
+		if mockImpl.IsGeneric() {
+			// Create type parameters without constraints for method receivers
+			typeParamsNoConstraints := []*model.TypeParameter{}
+			for i, param := range mockImpl.TypeParams() {
+				typeParamsNoConstraints = append(typeParamsNoConstraints,
+					model.NewTypeParameter(param.Name(), nil, i))
+			}
+			baseType = model.NewGenericTypeNamed(
 				outPkg,
 				mockImpl.Name(),
 				mockImpl.TypeStruct(),
-			),
+				typeParamsNoConstraints,
+			)
+		} else {
+			baseType = model.NewTypeNamed(
+				outPkg,
+				mockImpl.Name(),
+				mockImpl.TypeStruct(),
+			)
+		}
+		methodRcvType := model.NewPointer(baseType)
+
+		methodRcv := model.NewParameter(
+			mockRcvName,
+			methodRcvType,
 		)
 
 		// method body
@@ -287,8 +336,28 @@ func mockImpl(targetPkg *model.Package, targetIntf *model.Interface, outPkg *mod
 
 func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.PkgInfo, mockImpl *model.Struct) (stubRoot *model.Struct, stubs []*model.Struct) {
 	stubRootName := "Stub" + targetIntf.Name()
-	stubRoot = model.NewStruct(stubRootName, outPkg)
-	stubRootRcv := model.NewParameter(stubRcvName, stubRoot.Type())
+
+	// Handle generic interfaces for stub root
+	if targetIntf.IsGeneric() {
+		stubRoot = model.NewGenericStruct(stubRootName, outPkg, targetIntf.TypeParams())
+	} else {
+		stubRoot = model.NewStruct(stubRootName, outPkg)
+	}
+
+	// For method receivers on generic types, include type parameters without constraints
+	var stubRootBaseType *model.TypeNamed
+	if stubRoot.IsGeneric() {
+		// Create type parameters without constraints for method receivers
+		typeParamsNoConstraints := []*model.TypeParameter{}
+		for i, param := range stubRoot.TypeParams() {
+			typeParamsNoConstraints = append(typeParamsNoConstraints,
+				model.NewTypeParameter(param.Name(), nil, i))
+		}
+		stubRootBaseType = model.NewGenericTypeNamed(outPkg, stubRootName, stubRoot.TypeStruct(), typeParamsNoConstraints)
+	} else {
+		stubRootBaseType = model.NewTypeNamed(outPkg, stubRootName, stubRoot.TypeStruct())
+	}
+	stubRootRcv := model.NewParameter(stubRcvName, model.NewPointer(stubRootBaseType))
 	stubMethods := []*model.Method{}
 
 	mockInitVals := map[string]string{} // for NewMockBody
@@ -297,7 +366,14 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 	for _, intfMethod := range targetIntf.Methods() {
 		// stub for each intf's method.
 		stubName := "Stub" + intfMethod.Name()
-		stub := model.NewStruct(stubName, outPkg)
+		var stub *model.Struct
+
+		// Handle generic interfaces for individual stub structs
+		if targetIntf.IsGeneric() {
+			stub = model.NewGenericStruct(stubName, outPkg, targetIntf.TypeParams())
+		} else {
+			stub = model.NewStruct(stubName, outPkg)
+		}
 		for i, param := range intfMethod.Type().Results() {
 			stub.AddField(
 				model.NewField(
@@ -348,7 +424,38 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 	}
 	sort.Strings(keys)
 
-	newMockBody := "return &" + mockImpl.Name() + "{"
+	var newMockBody string
+	var returnType *model.TypeNamed
+
+	if targetIntf.IsGeneric() {
+		// For generic interfaces, include type parameters in mock creation (without constraints)
+		mockTypeName := mockImpl.Name() + "["
+		for i, param := range targetIntf.TypeParams() {
+			if i > 0 {
+				mockTypeName += ", "
+			}
+			mockTypeName += param.Name()
+			// Don't include constraints in instantiation
+		}
+		mockTypeName += "]"
+		newMockBody = "return &" + mockTypeName + "{"
+
+		// Create generic interface return type
+		returnType = model.NewGenericTypeNamed(
+			model.NewPkgInfo(
+				targetPkg.Name,
+				targetPkg.Path,
+				"",
+			),
+			targetIntf.Name(),
+			targetIntf.Type().Org(),
+			targetIntf.TypeParams(),
+		)
+	} else {
+		newMockBody = "return &" + mockImpl.Name() + "{"
+		returnType = targetIntf.Type()
+	}
+
 	for _, k := range keys {
 		v := mockInitVals[k]
 		newMockBody += k + ":" + v
@@ -356,12 +463,13 @@ func stub(targetPkg *model.Package, targetIntf *model.Interface, outPkg *model.P
 	}
 	newMockBody = strings.TrimRight(newMockBody, ",")
 	newMockBody += "}"
+
 	newMock := model.NewMethod(
 		stubRootRcv,
 		"NewMock",
 		model.NewTypeSignature(nil, nil,
 			[]*model.Parameter{
-				model.NewParameter("", targetIntf.Type()),
+				model.NewParameter("", returnType),
 			},
 		),
 		newMockBody,

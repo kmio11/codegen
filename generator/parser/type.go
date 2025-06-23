@@ -127,6 +127,10 @@ func (tp *typeParser) parseType(t types.Type) (model.Type, error) {
 		m, err = tp.parseSignature(tt)
 	case *types.Struct:
 		m, err = tp.parseStruct(tt)
+	case *types.TypeParam:
+		m, err = tp.parseTypeParam(tt)
+	case *types.Union:
+		m, err = tp.parseUnionConstraint(tt)
 	default:
 		err = fmt.Errorf("unexpected type: %s", tt.String())
 	}
@@ -198,6 +202,8 @@ func (tp *typeParser) parseInterface(t *types.Interface) (model.Type, error) {
 		emethods = append(emethods, emethod)
 	}
 
+	// Note: For now, we create regular interfaces here
+	// Type parameters are handled at the Named type level
 	return model.NewTypeInterface(embeddeds, emethods), nil
 }
 
@@ -222,6 +228,17 @@ func (tp *typeParser) parseNamedType(t *types.Named) (model.Type, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Parse type parameters if this is a generic type (Go 1.18+)
+	var typeParams []*model.TypeParameter
+	if t.TypeParams() != nil && t.TypeParams().Len() > 0 {
+		typeParams, err = tp.parseTypeParameters(t.TypeParams())
+		if err != nil {
+			return nil, err
+		}
+		return model.NewGenericTypeNamed(pkg, t.Obj().Name(), org, typeParams), nil
+	}
+
 	return model.NewTypeNamed(pkg, t.Obj().Name(), org), nil
 }
 
@@ -320,4 +337,72 @@ func (tp *typeParser) parseFunc(t *types.Func) (*model.Func, error) {
 	}
 
 	return model.NewFunc(t.Name(), typf, ""), nil
+}
+
+// parseTypeParameters parses type parameter list
+func (tp *typeParser) parseTypeParameters(typeParams *types.TypeParamList) ([]*model.TypeParameter, error) {
+	var params []*model.TypeParameter
+	for i := 0; i < typeParams.Len(); i++ {
+		param := typeParams.At(i)
+		constraint, err := tp.parseTypeConstraint(param.Constraint())
+		if err != nil {
+			return nil, err
+		}
+		typeParam := model.NewTypeParameter(param.Obj().Name(), constraint, i)
+		params = append(params, typeParam)
+	}
+	return params, nil
+}
+
+// parseTypeConstraint parses type constraint
+func (tp *typeParser) parseTypeConstraint(constraint types.Type) (model.Type, error) {
+	switch c := constraint.(type) {
+	case *types.Interface:
+		// Handle built-in constraints and interface constraints
+		if c.IsComparable() {
+			return model.ConstraintComparable, nil
+		}
+		if c.Empty() {
+			return model.ConstraintAny, nil
+		}
+		// For complex interface constraints, parse as regular interface
+		return tp.parseInterface(c)
+	case *types.Union:
+		// Handle union constraints like `int | string`
+		return tp.parseUnionConstraint(c)
+	case *types.Basic:
+		// Handle basic type constraints
+		return tp.parseBasic(c)
+	case *types.Named:
+		// Handle named type constraints
+		return tp.parseNamedType(c)
+	default:
+		// Default to any for unknown constraints
+		return model.ConstraintAny, nil
+	}
+}
+
+// parseUnionConstraint parses union type constraints
+func (tp *typeParser) parseUnionConstraint(union *types.Union) (model.Type, error) {
+	// For now, we'll represent union constraints as a string
+	// This could be enhanced later to support proper union types
+	var constraintName string
+	for i := 0; i < union.Len(); i++ {
+		term := union.Term(i)
+		if i > 0 {
+			constraintName += " | "
+		}
+		constraintName += term.Type().String()
+	}
+	return model.NewTypeConstraint(constraintName), nil
+}
+
+// parseTypeParam parses a single type parameter
+func (tp *typeParser) parseTypeParam(param *types.TypeParam) (model.Type, error) {
+	// For type parameters that appear in method signatures, we represent them as their name
+	constraint, err := tp.parseTypeConstraint(param.Constraint())
+	if err != nil {
+		return nil, err
+	}
+	return model.NewTypeParameter(param.Obj().Name(), constraint, param.Index()), nil
 }
