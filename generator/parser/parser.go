@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 	"go/types"
-	"io/ioutil"
+	"io"
 	"log"
 
 	"github.com/kmio11/codegen/generator/model"
@@ -25,7 +25,7 @@ type Parser struct {
 // NewParser returns Parser.
 func NewParser(opts ...Opts) *Parser {
 	p := &Parser{
-		log: log.New(ioutil.Discard, "", 0),
+		log: log.New(io.Discard, "", 0),
 	}
 	for _, opt := range opts {
 		opt(p)

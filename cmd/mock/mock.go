@@ -88,7 +88,7 @@ func (c Command) Execute() int {
 		PrintHeader(c.Name()).
 		Printf("// Mock for %s.%s", targetPkg.Path, targetIntf.Name()).
 		NewLine().
-		Printf(file.PrintCode()).
+		Printf("%s", file.PrintCode()).
 		Format()
 
 	// output
