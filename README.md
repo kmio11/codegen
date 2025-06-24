@@ -82,8 +82,8 @@ type Cache[K comparable, V any] interface {
 
 Generate with type parameters:
 ```bash
-go run github.com/kmio11/codegen/cmd mock -pkg . -type "Repository[T]" -out repository_mock.go
-go run github.com/kmio11/codegen/cmd mock -pkg . -type "Cache[K,V]" -out cache_mock.go
+go run github.com/kmio11/codegen/cmd mock -pkg . -pkg . -type Repository -out repository_mock_gen.go
+go run github.com/kmio11/codegen/cmd mock -pkg . -type "Cache" -out cache_mock_gen.go
 ```
 
 ## Usage Examples

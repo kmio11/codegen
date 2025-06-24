@@ -8,15 +8,15 @@ import (
 
 func TestCommand(t *testing.T) {
 	cmd := New()
-	
+
 	if cmd == nil {
 		t.Fatal("New() returned nil")
 	}
-	
+
 	if cmd.Name() != "mock" {
 		t.Errorf("Name() = %v, want %v", cmd.Name(), "mock")
 	}
-	
+
 	if cmd.Description() != "generate mock" {
 		t.Errorf("Description() = %v, want %v", cmd.Description(), "generate mock")
 	}
@@ -54,11 +54,11 @@ func TestCommandParse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := New()
 			err := cmd.Parse(tt.args)
-			
+
 			if tt.expectErr && err == nil {
 				t.Error("Parse() should return error for invalid args")
 			}
-			
+
 			if !tt.expectErr && err != nil {
 				t.Errorf("Parse() unexpected error = %v", err)
 			}
@@ -137,24 +137,24 @@ func TestFmtSignature(t *testing.T) {
 		model.NewParameter("result", model.NewTypeBasic("bool")),
 		model.NewParameter("err", model.NewTypeBasic("error")),
 	}
-	
+
 	originalSig := model.NewTypeSignature(params, nil, results)
-	
+
 	formattedSig := fmtSignature(originalSig)
-	
+
 	if len(formattedSig.Args()) != 2 {
 		t.Errorf("fmtSignature() args count = %v, want %v", len(formattedSig.Args()), 2)
 	}
-	
+
 	if len(formattedSig.Results()) != 2 {
 		t.Errorf("fmtSignature() results count = %v, want %v", len(formattedSig.Results()), 2)
 	}
-	
+
 	// Check that parameter names were changed to standardized format
 	if formattedSig.Args()[0].Name() != "a0" {
 		t.Errorf("fmtSignature() first arg name = %v, want %v", formattedSig.Args()[0].Name(), "a0")
 	}
-	
+
 	if formattedSig.Args()[1].Name() != "a1" {
 		t.Errorf("fmtSignature() second arg name = %v, want %v", formattedSig.Args()[1].Name(), "a1")
 	}
@@ -169,19 +169,19 @@ func TestFmtSignatureWithVariadic(t *testing.T) {
 	results := []*model.Parameter{
 		model.NewParameter("", model.NewTypeBasic("string")),
 	}
-	
+
 	originalSig := model.NewTypeSignature(params, variadic, results)
-	
+
 	formattedSig := fmtSignature(originalSig)
-	
+
 	if len(formattedSig.Args()) != 1 {
 		t.Errorf("fmtSignature() args count = %v, want %v", len(formattedSig.Args()), 1)
 	}
-	
+
 	if formattedSig.Variadic() == nil {
 		t.Error("fmtSignature() should preserve variadic parameter")
 	}
-	
+
 	if formattedSig.Variadic().Name() != "a1" {
 		t.Errorf("fmtSignature() variadic name = %v, want %v", formattedSig.Variadic().Name(), "a1")
 	}
@@ -193,9 +193,9 @@ func TestMockImplBasic(t *testing.T) {
 		Name: "testpkg",
 		Path: "example.com/testpkg",
 	}
-	
+
 	outPkg := model.NewPkgInfo("testpkg", "example.com/testpkg", "")
-	
+
 	// Create a simple interface
 	methods := []*model.Func{
 		model.NewFunc("Get", model.NewTypeSignature(
@@ -207,24 +207,24 @@ func TestMockImplBasic(t *testing.T) {
 			},
 		), ""),
 	}
-	
+
 	intf := model.NewInterface("TestInterface", outPkg, methods)
-	
+
 	// Test mock implementation generation
 	mockStruct := mockImpl(pkg, intf, outPkg)
-	
+
 	if mockStruct == nil {
 		t.Fatal("mockImpl() returned nil")
 	}
-	
+
 	if mockStruct.Name() != "MockTestInterface" {
 		t.Errorf("mockImpl() name = %v, want %v", mockStruct.Name(), "MockTestInterface")
 	}
-	
+
 	if !mockStruct.IsGeneric() && len(mockStruct.Fields()) < 2 {
 		t.Error("mockImpl() should create interface field and fake method fields")
 	}
-	
+
 	if len(mockStruct.Methods()) != 1 {
 		t.Errorf("mockImpl() methods count = %v, want %v", len(mockStruct.Methods()), 1)
 	}
@@ -236,13 +236,13 @@ func TestMockImplGeneric(t *testing.T) {
 		Name: "testpkg",
 		Path: "example.com/testpkg",
 	}
-	
+
 	outPkg := model.NewPkgInfo("testpkg", "example.com/testpkg", "")
-	
+
 	typeParams := []*model.TypeParameter{
 		model.NewTypeParameter("T", model.ConstraintAny, 0),
 	}
-	
+
 	// Create a generic interface
 	methods := []*model.Func{
 		model.NewFunc("Get", model.NewTypeSignature(
@@ -254,24 +254,24 @@ func TestMockImplGeneric(t *testing.T) {
 			},
 		), ""),
 	}
-	
+
 	intf := model.NewGenericInterface("Repository", outPkg, methods, typeParams)
-	
+
 	// Test generic mock implementation generation
 	mockStruct := mockImpl(pkg, intf, outPkg)
-	
+
 	if mockStruct == nil {
 		t.Fatal("mockImpl() returned nil")
 	}
-	
+
 	if mockStruct.Name() != "MockRepository" {
 		t.Errorf("mockImpl() name = %v, want %v", mockStruct.Name(), "MockRepository")
 	}
-	
+
 	if !mockStruct.IsGeneric() {
 		t.Error("mockImpl() should create generic mock for generic interface")
 	}
-	
+
 	if len(mockStruct.TypeParams()) != 1 {
 		t.Errorf("mockImpl() type params count = %v, want %v", len(mockStruct.TypeParams()), 1)
 	}
