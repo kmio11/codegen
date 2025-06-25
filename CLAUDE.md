@@ -26,10 +26,10 @@ go run . interface -pkg <package> -type <struct> -out <output_file>
 
 # Example usage (from examples directory)
 cd _examples/mock
-go run ../.. mock -pkg . -type SomeInterface -out testing_gen.go
+go run ../.. mock -pkg . -type Calculator -out calculator_mock_gen.go
 
 cd _examples/interface  
-go run ../.. interface -pkg . -type UserService -out user_service_gen.go
+go run ../.. interface -pkg . -type Calculator -out calculator_interface_gen.go
 ```
 
 ### Quality Checks
