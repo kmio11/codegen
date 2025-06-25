@@ -60,6 +60,8 @@ func (u *UserService) ListUsers() map[string]string {
 }
 
 // privateMethod is not exported and should not be included in interface
+// This method is intentionally unused to test private method exclusion
+//nolint:unused
 func (u *UserService) privateMethod() {
 	// internal implementation
 }

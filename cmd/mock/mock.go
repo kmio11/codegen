@@ -2,7 +2,6 @@ package mock
 
 import (
 	"flag"
-	"io/ioutil"
 	"sort"
 
 	"github.com/kmio11/codegen/generator"
@@ -95,7 +94,7 @@ func (c Command) Execute() int {
 	if file.Path() == "" {
 		fmt.Println(string(src))
 	} else {
-		err := ioutil.WriteFile(file.Path(), src, 0644)
+		err := os.WriteFile(file.Path(), src, 0644)
 		if err != nil {
 			log.Printf("writing output: %s\n", err)
 			return 1

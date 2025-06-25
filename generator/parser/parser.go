@@ -9,9 +9,6 @@ import (
 	"github.com/kmio11/codegen/generator/model"
 )
 
-const (
-	logPrefix = "[parser]"
-)
 
 // Parser is parser
 // parsing types.Package and generate model.Package.

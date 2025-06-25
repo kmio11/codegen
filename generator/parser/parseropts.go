@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 )
 
@@ -26,7 +26,7 @@ func OptParseTarget(targets []string) Opts {
 func OptLogger(logger *log.Logger) Opts {
 	return func(p *Parser) {
 		if logger == nil {
-			p.log = log.New(ioutil.Discard, "", 0)
+			p.log = log.New(io.Discard, "", 0)
 			return
 		}
 		p.log = logger
