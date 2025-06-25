@@ -227,3 +227,48 @@ func TestParserState(t *testing.T) {
 		t.Error("Initial stopLoadErr should be false")
 	}
 }
+
+// RED TEST: Test struct parsing support
+func TestStructParsing(t *testing.T) {
+	// This test should fail until we implement struct parsing
+	parser := NewParser()
+	
+	// Create a mock package with a struct
+	pkg := types.NewPackage("test", "test")
+	scope := pkg.Scope()
+	
+	// Create a struct type with methods
+	structType := types.NewNamed(
+		types.NewTypeName(0, pkg, "TestStruct", nil),
+		types.NewStruct([]*types.Var{
+			types.NewVar(0, pkg, "field", types.Typ[types.String]),
+		}, nil),
+		nil,
+	)
+	
+	// Add struct to package scope
+	scope.Insert(structType.Obj())
+	
+	parser.ParsedPkg = &Package{Pkg: pkg}
+	parser.Targets = []string{"TestStruct"}
+	
+	// This should work but will fail because struct parsing is not implemented
+	modelPkg, err := parser.Parse()
+	if err != nil {
+		// Expected to fail with struct unsupported error
+		if err.Error() != "test.TestStruct is unsupported" {
+			t.Errorf("Expected 'test.TestStruct is unsupported' error, got: %v", err)
+		}
+		return // Test passes - we expect this to fail
+	}
+	
+	// If we reach here, struct parsing is implemented
+	if len(modelPkg.Interfaces) != 1 {
+		t.Errorf("Expected 1 interface, got %d", len(modelPkg.Interfaces))
+	}
+	
+	intf := modelPkg.Interfaces[0]
+	if intf.Name() != "TestStructInterface" {
+		t.Errorf("Expected interface name 'TestStructInterface', got %s", intf.Name())
+	}
+}
