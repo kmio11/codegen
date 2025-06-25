@@ -10,11 +10,11 @@ func TestNew(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("New() returned nil")
 	}
-	
+
 	if cmd.Name() != "interface" {
 		t.Errorf("Expected command name 'interface', got %s", cmd.Name())
 	}
-	
+
 	if cmd.Description() != "generate interface from struct" {
 		t.Errorf("Expected description 'generate interface from struct', got %s", cmd.Description())
 	}
@@ -23,14 +23,14 @@ func TestNew(t *testing.T) {
 // RED TEST: Test command flag parsing
 func TestParse(t *testing.T) {
 	cmd := New()
-	
+
 	// Test with required flags
 	args := []string{"-pkg", ".", "-type", "TestStruct", "-out", "test.go"}
 	err := cmd.Parse(args)
 	if err != nil {
 		t.Fatalf("Parse() failed: %v", err)
 	}
-	
+
 	// Test missing type flag (should fail)
 	cmd2 := New()
 	args2 := []string{"-pkg", "."}
@@ -43,7 +43,7 @@ func TestParse(t *testing.T) {
 // RED TEST: Test command execution
 func TestExecute(t *testing.T) {
 	cmd := New()
-	
+
 	// This should fail because command is not implemented
 	exitCode := cmd.Execute()
 	if exitCode == 0 {

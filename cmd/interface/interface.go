@@ -134,26 +134,26 @@ func (c *Command) parse(typ string, pkg string) (*model.Package, *model.Interfac
 		parser.OptLogger(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)),
 		parser.OptParseTarget([]string{typ}),
 	)
-	
+
 	// Load package
 	err := p.LoadPackage(pkg)
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	// Parse the package
 	targetPkg, err := p.Parse()
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	// Check if interface was generated
 	if len(targetPkg.Interfaces) == 0 {
 		return nil, nil, fmt.Errorf("no interface generated from struct %s", typ)
 	}
-	
+
 	targetIntf := targetPkg.Interfaces[0]
-	
+
 	return targetPkg, targetIntf, nil
 }
 

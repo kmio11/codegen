@@ -119,14 +119,14 @@ func isStruct(t types.Type) bool {
 // parseStructAsInterface converts a struct to an interface by extracting its methods
 func (p *Parser) parseStructAsInterface(obj types.Object) (*model.Interface, error) {
 	structType := obj.Type()
-	
+
 	// Get method set including both value and pointer receiver methods
 	methodSet := types.NewMethodSet(structType)
 	pointerMethodSet := types.NewMethodSet(types.NewPointer(structType))
-	
+
 	// Combine both method sets
 	allMethods := make(map[string]*types.Func)
-	
+
 	// Add value receiver methods
 	for i := 0; i < methodSet.Len(); i++ {
 		sel := methodSet.At(i)
@@ -134,7 +134,7 @@ func (p *Parser) parseStructAsInterface(obj types.Object) (*model.Interface, err
 			allMethods[method.Name()] = method
 		}
 	}
-	
+
 	// Add pointer receiver methods
 	for i := 0; i < pointerMethodSet.Len(); i++ {
 		sel := pointerMethodSet.At(i)
@@ -142,12 +142,12 @@ func (p *Parser) parseStructAsInterface(obj types.Object) (*model.Interface, err
 			allMethods[method.Name()] = method
 		}
 	}
-	
+
 	// Convert to model.Func
 	var modelMethods []*model.Func
 	for _, method := range allMethods {
 		sig := method.Type().(*types.Signature)
-		
+
 		// Parse parameters
 		var params []*model.Parameter
 		if sig.Params() != nil {
@@ -160,7 +160,7 @@ func (p *Parser) parseStructAsInterface(obj types.Object) (*model.Interface, err
 				params = append(params, model.NewParameter(param.Name(), paramType))
 			}
 		}
-		
+
 		// Parse return values
 		var returns []*model.Parameter
 		if sig.Results() != nil {
@@ -173,23 +173,23 @@ func (p *Parser) parseStructAsInterface(obj types.Object) (*model.Interface, err
 				returns = append(returns, model.NewParameter(result.Name(), returnType))
 			}
 		}
-		
+
 		// Create type signature
 		typeSig := model.NewTypeSignature(params, nil, returns)
-		
+
 		// Create model function
 		modelMethod := model.NewFunc(method.Name(), typeSig, "")
 		modelMethods = append(modelMethods, modelMethod)
 	}
-	
+
 	// Create interface name by appending "Interface" to struct name
 	interfaceName := obj.Name() + "Interface"
-	
+
 	// Create package info (path, name, alias)
 	pkgInfo := model.NewPkgInfo(obj.Pkg().Name(), obj.Pkg().Path(), "")
-	
+
 	// Create interface
 	intf := model.NewInterface(interfaceName, pkgInfo, modelMethods)
-	
+
 	return intf, nil
 }

@@ -231,11 +231,11 @@ func TestParserState(t *testing.T) {
 // Test struct parsing support
 func TestStructParsing(t *testing.T) {
 	parser := NewParser()
-	
+
 	// Create a mock package with a struct
 	pkg := types.NewPackage("test", "test")
 	scope := pkg.Scope()
-	
+
 	// Create a struct type
 	structType := types.NewNamed(
 		types.NewTypeName(0, pkg, "TestStruct", nil),
@@ -244,7 +244,7 @@ func TestStructParsing(t *testing.T) {
 		}, nil),
 		nil,
 	)
-	
+
 	// Create methods for the struct
 	// Method 1: Name() string
 	nameMethod := types.NewFunc(0, pkg, "Name", types.NewSignatureType(
@@ -255,55 +255,55 @@ func TestStructParsing(t *testing.T) {
 		types.NewTuple(types.NewVar(0, pkg, "", types.Typ[types.String])), // results
 		false, // variadic
 	))
-	
+
 	// Method 2: SetName(name string)
 	setNameMethod := types.NewFunc(0, pkg, "SetName", types.NewSignatureType(
 		nil, // receiver
 		nil, // recv type params
 		nil, // type params
 		types.NewTuple(types.NewVar(0, pkg, "name", types.Typ[types.String])), // params
-		nil, // results
+		nil,   // results
 		false, // variadic
 	))
-	
+
 	// Add methods to the struct type
 	structType.AddMethod(nameMethod)
 	structType.AddMethod(setNameMethod)
-	
+
 	// Add struct to package scope
 	scope.Insert(structType.Obj())
-	
+
 	parser.ParsedPkg = &Package{Pkg: pkg}
 	parser.Targets = []string{"TestStruct"}
-	
+
 	// Parse the struct
 	modelPkg, err := parser.Parse()
 	if err != nil {
 		t.Fatalf("Failed to parse struct: %v", err)
 	}
-	
+
 	// Verify interface was created
 	if len(modelPkg.Interfaces) != 1 {
 		t.Errorf("Expected 1 interface, got %d", len(modelPkg.Interfaces))
 	}
-	
+
 	intf := modelPkg.Interfaces[0]
 	if intf.Name() != "TestStructInterface" {
 		t.Errorf("Expected interface name 'TestStructInterface', got %s", intf.Name())
 	}
-	
+
 	// Verify methods were extracted
 	methods := intf.Methods()
 	if len(methods) != 2 {
 		t.Errorf("Expected 2 methods, got %d", len(methods))
 	}
-	
+
 	// Check method names
 	methodNames := make(map[string]bool)
 	for _, method := range methods {
 		methodNames[method.Name()] = true
 	}
-	
+
 	if !methodNames["Name"] {
 		t.Error("Expected method 'Name' not found")
 	}
