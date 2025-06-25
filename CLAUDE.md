@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Go code generation tool (`github.com/kmio11/codegen`) that generates mock objects from Go interfaces. The tool creates both mock implementations and stub helpers for testing purposes.
+This is a Go code generation tool (`github.com/kmio11/codegen`) that provides two main capabilities:
+1. **Mock generation** from Go interfaces - creates mock implementations and stub helpers for testing
+2. **Interface generation** from Go structs - extracts interface definitions from struct methods for clean architecture
 
 ## Development Commands
 
@@ -19,9 +21,15 @@ go get github.com/kmio11/codegen/cmd
 # Run mock generation
 go run ./cmd mock -pkg <package> -type <interface> -out <output_file>
 
-# Example usage (from sample directory)
-cd cmd/mock/_sample
-go run ../../.. mock -pkg . -type SomeInterface -out testing_mock_gen.go
+# Run interface generation
+go run ./cmd interface -pkg <package> -type <struct> -out <output_file>
+
+# Example usage (from examples directory)
+cd _examples/mock
+go run ../../cmd mock -pkg . -type SomeInterface -out testing_gen.go
+
+cd _examples/interface  
+go run ../../cmd interface -pkg . -type UserService -out user_service_gen.go
 ```
 
 ### Quality Checks
@@ -48,13 +56,14 @@ cd cmd/mock/_sample && go test
 ### Command Pattern CLI
 - Main entry: `cmd/codegen.go` with pluggable command system
 - Commands implement `Command` interface: `Name()`, `Description()`, `Usage()`, `Parse()`, `Execute()`
-- Currently supports one command: `mock`
+- Currently supports two commands: `mock` and `interface`
 
 ### Three-Layer Generation Architecture
 
 1. **Parser Layer** (`generator/parser/`)
-   - Uses `golang.org/x/tools` to parse Go packages and extract interface definitions
+   - Uses `golang.org/x/tools` to parse Go packages and extract interface/struct definitions
    - Converts Go AST into internal model representations
+   - Supports both interface parsing (for mocking) and struct parsing (for interface generation)
 
 2. **Model Layer** (`generator/model/`)
    - Intermediate representation: Package, File, Interface, Method, Type structures
@@ -73,18 +82,38 @@ For each interface, generates:
 ## Key Files and Components
 
 - `cmd/codegen.go` - Main CLI dispatcher and command registration
-- `cmd/mock/mock.go` - Mock generation command implementation  
+- `cmd/mock/mock.go` - Mock generation command implementation
+- `cmd/interface/interface.go` - Interface generation command implementation
 - `generator/generator.go` - Core code generation with fluent API
-- `generator/parser/` - Go package parsing and AST processing
+- `generator/parser/` - Go package parsing and AST processing (supports both interfaces and structs)
 - `generator/model/` - Internal code representation models
-- `cmd/mock/_sample/` - Example usage and test files
+- `_examples/mock/` - Mock generation example usage and test files
+- `_examples/interface/` - Interface generation example usage and test files
 
 ## Dependencies
 
 - `golang.org/x/tools` - Required for Go code analysis and manipulation
 - Standard library only for core functionality
 
-## Mock Usage Pattern
+## Usage Patterns
+
+### Interface Generation Pattern
+
+Extract interfaces from struct implementations:
+```go
+// Input: Struct with methods
+type UserService struct { db Database }
+func (u *UserService) GetUser(id string) (*User, error) { ... }
+func (u *UserService) CreateUser(user *User) error { ... }
+
+// Generated: Clean interface definition
+type UserServiceInterface interface {
+    GetUser(id string) (*User, error)
+    CreateUser(user *User) error
+}
+```
+
+### Mock Usage Pattern
 
 Generated mocks embed the original interface and provide:
 ```go

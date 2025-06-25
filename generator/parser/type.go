@@ -310,18 +310,6 @@ func (tp *typeParser) parseParameter(t *types.Tuple) ([]*model.Parameter, error)
 	return params, nil
 }
 
-func (tp *typeParser) parseTuple(t *types.Tuple) ([]model.Type, error) {
-	ms := []model.Type{}
-	for i := 0; i < t.Len(); i++ {
-		v := t.At(i)
-		vv, err := tp.parseType(v.Type())
-		if err != nil {
-			return nil, err
-		}
-		ms = append(ms, vv)
-	}
-	return ms, nil
-}
 
 func (tp *typeParser) parseFunc(t *types.Func) (*model.Func, error) {
 	sig, _ := t.Type().(*types.Signature) // *types.Func's Type() is always a *Signature
