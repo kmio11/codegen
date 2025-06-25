@@ -13,23 +13,23 @@ This is a Go code generation tool (`github.com/kmio11/codegen`) that provides tw
 ### Building and Running
 ```bash
 # Build the tool
-go build ./cmd
+go build .
 
 # Install globally
-go get github.com/kmio11/codegen/cmd
+go get github.com/kmio11/codegen
 
 # Run mock generation
-go run ./cmd mock -pkg <package> -type <interface> -out <output_file>
+go run . mock -pkg <package> -type <interface> -out <output_file>
 
 # Run interface generation
-go run ./cmd interface -pkg <package> -type <struct> -out <output_file>
+go run . interface -pkg <package> -type <struct> -out <output_file>
 
 # Example usage (from examples directory)
 cd _examples/mock
-go run ../../cmd mock -pkg . -type SomeInterface -out testing_gen.go
+go run ../.. mock -pkg . -type Calculator -out calculator_mock_gen.go
 
 cd _examples/interface  
-go run ../../cmd interface -pkg . -type UserService -out user_service_gen.go
+go run ../.. interface -pkg . -type Calculator -out calculator_interface_gen.go
 ```
 
 ### Quality Checks
@@ -54,7 +54,7 @@ cd cmd/mock/_sample && go test
 ## Code Architecture
 
 ### Command Pattern CLI
-- Main entry: `cmd/codegen.go` with pluggable command system
+- Main entry: `main.go` with pluggable command system
 - Commands implement `Command` interface: `Name()`, `Description()`, `Usage()`, `Parse()`, `Execute()`
 - Currently supports two commands: `mock` and `interface`
 
@@ -81,7 +81,7 @@ For each interface, generates:
 
 ## Key Files and Components
 
-- `cmd/codegen.go` - Main CLI dispatcher and command registration
+- `main.go` - Main CLI dispatcher and command registration
 - `cmd/mock/mock.go` - Mock generation command implementation
 - `cmd/interface/interface.go` - Interface generation command implementation
 - `generator/generator.go` - Core code generation with fluent API
