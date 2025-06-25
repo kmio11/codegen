@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	ifacecommand "github.com/kmio11/codegen/cmd/interface"
 	"github.com/kmio11/codegen/cmd/mock"
 )
 
@@ -18,6 +19,7 @@ type Command interface {
 var (
 	commands = []Command{
 		mock.New(),
+		ifacecommand.New(),
 	}
 )
 
