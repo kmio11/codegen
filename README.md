@@ -8,12 +8,12 @@ A versatile Go code generation tool that provides:
 
 ```bash
 # Install globally
-go get github.com/kmio11/codegen/cmd
+go get github.com/kmio11/codegen
 
 # Or clone and build locally
 git clone https://github.com/kmio11/codegen
 cd codegen
-go build ./cmd
+go build .
 ```
 
 ## Quick Start
@@ -43,7 +43,7 @@ func (u *UserService) DeleteUser(id string) error {
 
 Generate interface:
 ```bash
-go run github.com/kmio11/codegen/cmd interface -pkg . -type UserService -out user_service_gen.go
+go run github.com/kmio11/codegen interface -pkg . -type UserService -out user_service_gen.go
 ```
 
 This generates:
@@ -72,7 +72,7 @@ type UserService interface {
 
 Generate mocks:
 ```bash
-go run github.com/kmio11/codegen/cmd mock -pkg . -type UserService -out user_service_gen.go
+go run github.com/kmio11/codegen mock -pkg . -type UserService -out user_service_gen.go
 ```
 
 This generates two types of mock structures:
@@ -124,8 +124,8 @@ type Cache[K comparable, V any] interface {
 
 Generate with type parameters:
 ```bash
-go run github.com/kmio11/codegen/cmd mock -pkg . -type Repository -out repository_gen.go
-go run github.com/kmio11/codegen/cmd mock -pkg . -type Cache -out cache_gen.go
+go run github.com/kmio11/codegen mock -pkg . -type Repository -out repository_gen.go
+go run github.com/kmio11/codegen mock -pkg . -type Cache -out cache_gen.go
 ```
 
 ## Usage Examples
@@ -194,7 +194,7 @@ func TestRepository_Generic(t *testing.T) {
 Generate interfaces from struct methods:
 
 ```bash
-go run github.com/kmio11/codegen/cmd interface [options]
+go run github.com/kmio11/codegen interface [options]
 ```
 
 **Required Options:**
@@ -210,19 +210,19 @@ go run github.com/kmio11/codegen/cmd interface [options]
 **Examples:**
 ```bash
 # Basic usage - generates UserServiceInterface
-go run ./cmd interface -pkg . -type UserService -out user_service_gen.go
+go run . interface -pkg . -type UserService -out user_service_gen.go
 
 # Custom interface name
-go run ./cmd interface -pkg . -type UserService -name UserRepository -out user_repository_gen.go
+go run . interface -pkg . -type UserService -name UserRepository -out user_repository_gen.go
 
 # Different output package
-go run ./cmd interface -pkg ./services -type PaymentService -outpkg contracts -out contracts/payment_gen.go
+go run . interface -pkg ./services -type PaymentService -outpkg contracts -out contracts/payment_gen.go
 
 # Output to stdout
-go run ./cmd interface -pkg . -type AuthService
+go run . interface -pkg . -type AuthService
 
 # Complex package structure
-go run ./cmd interface -pkg ./internal/service -type OrderProcessor -selfpkg github.com/myorg/myapp/contracts -outpkg contracts -out contracts/order_gen.go
+go run . interface -pkg ./internal/service -type OrderProcessor -selfpkg github.com/myorg/myapp/contracts -outpkg contracts -out contracts/order_gen.go
 ```
 
 ### Mock Command
@@ -230,7 +230,7 @@ go run ./cmd interface -pkg ./internal/service -type OrderProcessor -selfpkg git
 Generate mocks from interfaces:
 
 ```bash
-go run github.com/kmio11/codegen/cmd mock [options]
+go run github.com/kmio11/codegen mock [options]
 ```
 
 **Required Options:**
@@ -245,16 +245,16 @@ go run github.com/kmio11/codegen/cmd mock [options]
 **Examples:**
 ```bash
 # Basic usage
-go run ./cmd mock -pkg . -type UserService -out user_service_gen.go
+go run . mock -pkg . -type UserService -out user_service_gen.go
 
 # With custom output package
-go run ./cmd mock -pkg ./services -type PaymentService -outpkg mocks -out mocks/payment_service_gen.go
+go run . mock -pkg ./services -type PaymentService -outpkg mocks -out mocks/payment_service_gen.go
 
 # Generic interface
-go run ./cmd mock -pkg . -type "Repository" -out repository_gen.go
+go run . mock -pkg . -type "Repository" -out repository_gen.go
 
 # Interface with complex constraints  
-go run ./cmd mock -pkg . -type "Number" -out number_gen.go
+go run . mock -pkg . -type "Number" -out number_gen.go
 ```
 
 ## Features
