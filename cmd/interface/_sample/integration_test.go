@@ -8,7 +8,7 @@ import (
 	ifacecommand "github.com/kmio11/codegen/cmd/interface"
 )
 
-// RED TEST: Integration test for end-to-end interface generation
+// TestIntegrationInterfaceGeneration tests end-to-end interface generation workflow
 func TestIntegrationInterfaceGeneration(t *testing.T) {
 	// Create temporary output file
 	tmpDir := t.TempDir()
@@ -71,7 +71,7 @@ func TestIntegrationInterfaceGeneration(t *testing.T) {
 	}
 }
 
-// RED TEST: Test interface generation with default name
+// TestIntegrationDefaultInterfaceName tests interface generation with default naming
 func TestIntegrationDefaultInterfaceName(t *testing.T) {
 	// Create temporary output file
 	tmpDir := t.TempDir()
@@ -113,7 +113,7 @@ func TestIntegrationDefaultInterfaceName(t *testing.T) {
 	}
 }
 
-// RED TEST: Test error handling for non-existent struct
+// TestIntegrationNonExistentStruct tests error handling for non-existent struct types
 func TestIntegrationNonExistentStruct(t *testing.T) {
 	// Create command
 	cmd := ifacecommand.New()

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// RED TEST: Test interface command creation
+// TestNew tests interface command creation
 func TestNew(t *testing.T) {
 	cmd := New()
 	if cmd == nil {
@@ -20,7 +20,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-// RED TEST: Test command flag parsing
+// TestParse tests command flag parsing and validation
 func TestParse(t *testing.T) {
 	cmd := New()
 
@@ -40,13 +40,13 @@ func TestParse(t *testing.T) {
 	}
 }
 
-// RED TEST: Test command execution
+// TestExecute tests command execution with error handling
 func TestExecute(t *testing.T) {
 	cmd := New()
 
-	// This should fail because command is not implemented
+	// This should fail because no valid target is specified
 	exitCode := cmd.Execute()
 	if exitCode == 0 {
-		t.Error("Execute() should return non-zero exit code when not implemented")
+		t.Error("Execute() should return non-zero exit code when no valid target is specified")
 	}
 }
