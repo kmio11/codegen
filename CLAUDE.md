@@ -24,12 +24,12 @@ go run ./cmd mock -pkg <package> -type <interface> -out <output_file>
 # Run interface generation
 go run ./cmd interface -pkg <package> -type <struct> -out <output_file>
 
-# Example usage (from sample directory)
-cd cmd/mock/_sample
-go run ../../.. mock -pkg . -type SomeInterface -out testing_mock_gen.go
+# Example usage (from examples directory)
+cd _examples/mock
+go run ../../cmd mock -pkg . -type SomeInterface -out testing_gen.go
 
-cd cmd/interface/_sample  
-go run ../../.. interface -pkg . -type UserService -out user_interface.go
+cd _examples/interface  
+go run ../../cmd interface -pkg . -type UserService -out user_service_gen.go
 ```
 
 ### Quality Checks
@@ -87,8 +87,8 @@ For each interface, generates:
 - `generator/generator.go` - Core code generation with fluent API
 - `generator/parser/` - Go package parsing and AST processing (supports both interfaces and structs)
 - `generator/model/` - Internal code representation models
-- `cmd/mock/_sample/` - Mock generation example usage and test files
-- `cmd/interface/_sample/` - Interface generation example usage and test files
+- `_examples/mock/` - Mock generation example usage and test files
+- `_examples/interface/` - Interface generation example usage and test files
 
 ## Dependencies
 

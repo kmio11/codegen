@@ -43,7 +43,7 @@ func (u *UserService) DeleteUser(id string) error {
 
 Generate interface:
 ```bash
-go run github.com/kmio11/codegen/cmd interface -pkg . -type UserService -out user_interface.go
+go run github.com/kmio11/codegen/cmd interface -pkg . -type UserService -out user_service_gen.go
 ```
 
 This generates:
@@ -72,7 +72,7 @@ type UserService interface {
 
 Generate mocks:
 ```bash
-go run github.com/kmio11/codegen/cmd mock -pkg . -type UserService -out user_mock.go
+go run github.com/kmio11/codegen/cmd mock -pkg . -type UserService -out user_service_gen.go
 ```
 
 This generates two types of mock structures:
@@ -124,8 +124,8 @@ type Cache[K comparable, V any] interface {
 
 Generate with type parameters:
 ```bash
-go run github.com/kmio11/codegen/cmd mock -pkg . -pkg . -type Repository -out repository_mock_gen.go
-go run github.com/kmio11/codegen/cmd mock -pkg . -type "Cache" -out cache_mock_gen.go
+go run github.com/kmio11/codegen/cmd mock -pkg . -type Repository -out repository_gen.go
+go run github.com/kmio11/codegen/cmd mock -pkg . -type Cache -out cache_gen.go
 ```
 
 ## Usage Examples
@@ -210,19 +210,19 @@ go run github.com/kmio11/codegen/cmd interface [options]
 **Examples:**
 ```bash
 # Basic usage - generates UserServiceInterface
-go run ./cmd interface -pkg . -type UserService -out user_interface.go
+go run ./cmd interface -pkg . -type UserService -out user_service_gen.go
 
 # Custom interface name
-go run ./cmd interface -pkg . -type UserService -name UserRepository -out user_repo.go
+go run ./cmd interface -pkg . -type UserService -name UserRepository -out user_repository_gen.go
 
 # Different output package
-go run ./cmd interface -pkg ./services -type PaymentService -outpkg contracts -out contracts/payment.go
+go run ./cmd interface -pkg ./services -type PaymentService -outpkg contracts -out contracts/payment_gen.go
 
 # Output to stdout
 go run ./cmd interface -pkg . -type AuthService
 
 # Complex package structure
-go run ./cmd interface -pkg ./internal/service -type OrderProcessor -selfpkg github.com/myorg/myapp/contracts -outpkg contracts -out contracts/order.go
+go run ./cmd interface -pkg ./internal/service -type OrderProcessor -selfpkg github.com/myorg/myapp/contracts -outpkg contracts -out contracts/order_gen.go
 ```
 
 ### Mock Command
@@ -245,16 +245,16 @@ go run github.com/kmio11/codegen/cmd mock [options]
 **Examples:**
 ```bash
 # Basic usage
-go run ./cmd mock -pkg . -type UserService -out user_mock.go
+go run ./cmd mock -pkg . -type UserService -out user_service_gen.go
 
 # With custom output package
-go run ./cmd mock -pkg ./services -type PaymentService -outpkg mocks -out mocks/payment_mock.go
+go run ./cmd mock -pkg ./services -type PaymentService -outpkg mocks -out mocks/payment_service_gen.go
 
 # Generic interface
-go run ./cmd mock -pkg . -type "Repository[T any]" -out repository_mock.go
+go run ./cmd mock -pkg . -type "Repository" -out repository_gen.go
 
 # Interface with complex constraints  
-go run ./cmd mock -pkg . -type "Processor[T comparable, U int|float64]" -out processor_mock.go
+go run ./cmd mock -pkg . -type "Number" -out number_gen.go
 ```
 
 ## Features
@@ -290,46 +290,17 @@ go run ./cmd mock -pkg . -type "Processor[T comparable, U int|float64]" -out pro
 ## Examples
 
 ### Interface Generation Examples
-The `cmd/interface/_sample/` directory contains working examples:
+The `_examples/interface/` directory contains working examples:
 
 - **`sample.go`** - Example struct with various method signatures
 - **`integration_test.go`** - End-to-end testing examples
-- **Generated interface files** - Show expected interface output format
+- **`user_service_gen.go`** - Generated interface example showing expected output format
 
 ### Mock Generation Examples
-The `cmd/mock/_sample/` directory contains working examples:
+The `_examples/mock/` directory contains working examples:
 
 - **`sample.go`** - Basic interface definitions
 - **`generic_interfaces.go`** - Generic interface examples with various constraints
 - **`*_test.go`** files - Demonstrate proper mock usage patterns
-- **Generated mock files** - Show expected output format
+- **`testing_gen.go`** - Generated mock example showing expected output format
 
-## Workflow Integration
-
-### Clean Architecture Pattern
-```bash
-# 1. Start with concrete implementation
-# user_service.go contains UserService struct with methods
-
-# 2. Generate interface contract
-go run ./cmd interface -pkg . -type UserService -name UserRepository -out user_repository.go
-
-# 3. Generate mocks for testing
-go run ./cmd mock -pkg . -type UserRepository -out user_repository_mock.go
-
-# 4. Use in dependency injection
-```
-
-### TDD Workflow
-```bash
-# 1. Define interface first
-# user_repository.go contains UserRepository interface
-
-# 2. Generate mocks for testing
-go run ./cmd mock -pkg . -type UserRepository -out user_repository_mock.go
-
-# 3. Write tests using mocks
-# 4. Implement concrete struct
-# 5. Generate interface from struct to verify contract compliance
-go run ./cmd interface -pkg . -type UserService -name UserRepository
-```
